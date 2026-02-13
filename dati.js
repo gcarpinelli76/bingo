@@ -1,7 +1,34 @@
-/ Archivio fisso delle cartelle (Esempio prime 3) [cite: 2026-02-12]
-const ARCHIVIO_FISSO = [
-    [[null,15,null,33,null,55,null,72,81],[1,null,22,null,40,null,61,null,88],[8,null,28,44,null,59,null,77,null]], // Cartella 1
-    [[5,null,21,null,42,null,63,70,null],[null,12,null,35,48,51,null,null,85],[9,19,null,null,null,58,66,null,90]], // Cartella 2
-    [[2,11,null,null,41,null,null,71,82],[null,null,25,38,null,50,65,79,null],[7,18,null,47,null,56,null,null,89]]  // Cartella 3
-    // Aggiungerò le altre 997 se necessario
-];
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendita Cartelle</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="area-comandi">
+            <div id="box-estratto">
+                <div class="label-estratto">CARTELLE SCELTE</div>
+                <div id="cartella-corrente" style="font-size: 2vw; color: #f1c40f; font-weight: bold;">---</div>
+            </div>
+            <input type="text" id="nome-giocatore" placeholder="Nome Cliente" style="width: 100%; padding: 10px; margin-bottom: 5px;">
+            <input type="text" id="tel-giocatore" placeholder="WhatsApp (es: 39333...)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
+            <button onclick="assegnaCartellaDaArchivio()" id="btn-estrai" style="background: #27ae60;">ASSEGNA E INVIA</button>
+            <button onclick="disegnaSelettore()" id="btn-nuova-partita">AGGIORNA GRIGLIA</button>
+            <a href="index.html" class="btn-nav">TORNA AL TABELLONE</a>
+        </div>
+        <div id="tabellone-container">
+            <h1>Scegli le cartelle</h1>
+            <div id="griglia-selezione" class="griglia-1000"></div>
+        </div>
+        <div id="classifica-container">
+            <h2 style="font-size: 1.2vw;">ULTIME ASSEGNAZIONI</h2>
+            <div id="lista-classifica" style="overflow-y: auto; flex-grow: 1;"></div>
+        </div>
+    </div>
+    <script src="dati.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
