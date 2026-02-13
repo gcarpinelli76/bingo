@@ -68,37 +68,38 @@ function disegnaSelettore() {
     }
 }
 
+// SOLUZIONE DEFINITIVA: MESSAGGIO UNICO CON TUTTI I LINK
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
-    var daInviare = [...selezioniAttuali];
+    var corpoMessaggio = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\nEcco le tue cartelle:\n\n";
 
-    daInviare.forEach((idS, index) => {
-        // RITARDO DI 1.5 SECONDI PER EVITARE IL BLOCCO BROWSER
-        setTimeout(function() {
-            var datiCartella = archivioCartelle[idS - 1];
-            var datiString = encodeURIComponent(JSON.stringify(datiCartella));
-            var link = baseUrl + "cartella.html?id=" + idS + "&data=" + datiString;
-            var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartella N. " + idS + "\n🔗 Link: " + link;
-            
-            giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
-            cartelleUsate.push(idS);
-            
-            window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
-
-            if (index === daInviare.length - 1) {
-                selezioniAttuali = [];
-                document.getElementById('cartella-corrente').innerText = "---";
-                document.getElementById('nome-giocatore').value = "";
-                document.getElementById('tel-giocatore').value = "";
-                disegnaSelettore(); 
-                aggiornaLista();
-            }
-        }, index * 1500); 
+    selezioniAttuali.forEach((idS) => {
+        var datiCartella = archivioCartelle[idS - 1];
+        var datiString = encodeURIComponent(JSON.stringify(datiCartella));
+        var link = baseUrl + "cartella.html?id=" + idS + "&data=" + datiString;
+        
+        // Aggiunge ogni cartella al testo del messaggio
+        corpoMessaggio += "🎫 Cartella N. " + idS + "\n🔗 " + link + "\n\n";
+        
+        // Registra internamente la vendita
+        giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
+        cartelleUsate.push(idS);
     });
+
+    // Apre WhatsApp una sola volta con tutto il contenuto
+    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(corpoMessaggio), '_blank');
+
+    // Pulisce l'interfaccia
+    selezioniAttuali = [];
+    document.getElementById('cartella-corrente').innerText = "---";
+    document.getElementById('nome-giocatore').value = "";
+    document.getElementById('tel-giocatore').value = "";
+    disegnaSelettore(); 
+    aggiornaLista();
 }
 
 function estraiNumero() {
