@@ -16,7 +16,7 @@
             <input type="text" id="nome-giocatore" placeholder="Nome Cliente" style="width: 100%; padding: 10px; margin-bottom: 5px;">
             <input type="text" id="tel-giocatore" placeholder="WhatsApp (es: 39333...)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
             <button onclick="assegnaCartellaDaArchivio()" id="btn-estrai" style="background: #27ae60;">ASSEGNA E INVIA</button>
-            <button onclick="generaArchivioMille()" id="btn-nuova-partita">CARICA / RESET 1000</button>
+            <button onclick="disegnaSelettore()" id="btn-nuova-partita">AGGIORNA GRIGLIA</button>
             <a href="index.html" class="btn-nav">TORNA AL TABELLONE</a>
         </div>
         <div id="tabellone-container">
@@ -28,6 +28,7 @@
             <div id="lista-classifica" style="overflow-y: auto; flex-grow: 1;"></div>
         </div>
     </div>
+    <script src="dati.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
