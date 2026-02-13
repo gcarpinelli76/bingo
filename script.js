@@ -119,7 +119,6 @@ function controllaVincite() {
 
 function annunciaVincitore(tipo, nome, cartellaId) {
     let overlay = document.createElement('div');
-    // Stile compatto: ridotti i margini e le dimensioni per alzare il tasto [cite: 2026-02-13]
     overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:10px;";
     
     let titolo = tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo;
@@ -131,20 +130,15 @@ function annunciaVincitore(tipo, nome, cartellaId) {
     `;
     document.body.appendChild(overlay);
 }
-}
 
-// RESET SOLO TABELLONE: Mantiene i giocatori e le loro cartelle [cite: 2026-02-13]
 function resetPartita() {
     if (confirm("Vuoi resettare i numeri estratti? Le cartelle assegnate rimarranno ai clienti.")) {
         localStorage.removeItem('bingo_estratti');
         localStorage.removeItem('bingo_premi');
-        numeriUsciti = [];
-        premiVinti = { quaterna: false, cinquina: false, bingo: false };
         location.reload(); 
     }
 }
 
-// RESET TOTALE: Libera anche le cartelle vendute [cite: 2026-02-13]
 function resetVendite() {
     if (confirm("Attenzione: vuoi liberare tutte le cartelle e cancellare l'elenco dei giocatori?")) {
         localStorage.clear();
@@ -171,4 +165,3 @@ function aggiornaLista() {
         lista.appendChild(d);
     });
 }
-
