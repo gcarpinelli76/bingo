@@ -2,6 +2,7 @@
 var numeriUsciti = JSON.parse(localStorage.getItem('bingo_estratti')) || [];
 var giocatori = JSON.parse(localStorage.getItem('bingo_giocatori')) || [];
 var cartelleUsate = JSON.parse(localStorage.getItem('bingo_usate')) || [];
+var premiVinti = JSON.parse(localStorage.getItem('bingo_premi')) || { quaterna: false, cinquina: false, bingo: false };
 var selezioniAttuali = [];
 
 window.onload = function() {
@@ -11,8 +12,7 @@ window.onload = function() {
         for (var i = 1; i <= 90; i++) {
             var div = document.createElement('div');
             div.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
-            div.id = 'n' + i;
-            div.innerText = i;
+            div.id = 'n' + i; div.innerText = i;
             tabellone.appendChild(div);
         }
         if (numeriUsciti.length > 0) {
@@ -20,10 +20,7 @@ window.onload = function() {
             if (display) display.innerText = numeriUsciti[numeriUsciti.length - 1];
         }
     }
-    
-    if (typeof ARCHIVIO_FISSO !== 'undefined') {
-        disegnaSelettore();
-    }
+    if (typeof ARCHIVIO_FISSO !== 'undefined') disegnaSelettore();
     aggiornaLista();
 };
 
@@ -31,16 +28,12 @@ function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia) return;
     griglia.innerHTML = "";
-    
     for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        var classe = 'btn-selezione';
-        if (cartelleUsate.includes(num)) classe += ' occupato'; 
-        else if (selezioniAttuali.includes(num)) classe += ' selezionato';
+        var classe = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
         btn.className = classe;
-        
         btn.onclick = (function(n) { return function() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
@@ -58,13 +51,13 @@ function assegnaCartellaDaArchivio() {
     var telIn = document.getElementById('tel-giocatore');
     if (!nomeIn || !telIn) return;
     var nome = nomeIn.value; var tel = telIn.value;
-    
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
     var idsString = selezioniAttuali.join(',');
 
     selezioniAttuali.forEach((idS) => {
+        // Qui salviamo i dati della cartella nell'oggetto giocatore per il controllo vincite
         giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
         cartelleUsate.push(idS);
     });
@@ -91,7 +84,55 @@ function estraiNumero() {
     if (el) el.className = 'numero estratto';
     var display = document.getElementById('numero-gigante');
     if (display) display.innerText = n;
+    
+    // Il controllo ora avviene ESCLUSIVAMENTE sulle cartelle in 'giocatori'
+    controllaVincite();
     aggiornaLista();
+}
+
+function controllaVincite() {
+    // Controllo limitato solo ai giocatori che hanno acquistato una cartella [cite: 2026-02-13]
+    giocatori.forEach(g => {
+        let numeriTotaliCartella = 0;
+        
+        for (let r = 0; r < 3; r++) {
+            let numeriInRiga = 0;
+            for (let c = 0; c < 9; c++) {
+                let num = g.cartella[r][c];
+                if (num !== null && numeriUsciti.includes(num)) {
+                    numeriInRiga++;
+                    numeriTotaliCartella++;
+                }
+            }
+            
+            if (numeriInRiga === 4 && !premiVinti.quaterna) {
+                annunciaVincitore("QUATERNA", g.nome, g.id);
+                premiVinti.quaterna = true;
+            }
+            if (numeriInRiga === 5 && !premiVinti.cinquina) {
+                annunciaVincitore("CINQUINA", g.nome, g.id);
+                premiVinti.cinquina = true;
+            }
+        }
+        
+        if (numeriTotaliCartella === 15 && !premiVinti.bingo) {
+            annunciaVincitore("BINGO", g.nome, g.id);
+            premiVinti.bingo = true;
+        }
+    });
+    localStorage.setItem('bingo_premi', JSON.stringify(premiVinti));
+}
+
+function annunciaVincitore(tipo, nome, cartellaId) {
+    let overlay = document.createElement('div');
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 15px solid #f1c40f;";
+    
+    let titolo = tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo;
+    overlay.innerHTML = `<h1 style="font-size:12vw; margin:0; color:#f1c40f; text-shadow: 0 0 20px #f1c40f;">${titolo}</h1>
+                         <p style="font-size:6vw; margin:20px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
+                         <p style="font-size:4vw; color:#bdc3c7;">Cartella Numero: ${cartellaId}</p>
+                         <button onclick="this.parentElement.remove()" style="padding:20px 50px; font-size:3vw; cursor:pointer; background:#f1c40f; border:none; border-radius:15px; margin-top:30px; font-weight:bold;">OK, CONTINUA</button>`;
+    document.body.appendChild(overlay);
 }
 
 function resetPartita() {
@@ -101,11 +142,11 @@ function resetPartita() {
     }
 }
 
-// NUOVA FUNZIONE: Ripristina solo le cartelle senza toccare il tabellone [cite: 2026-02-13]
 function resetVendite() {
-    if (confirm("Attenzione: vuoi liberare tutte le cartelle? I numeri già estratti rimarranno segnati.")) {
+    if (confirm("Attenzione: vuoi liberare tutte le cartelle?")) {
         localStorage.removeItem('bingo_giocatori');
         localStorage.removeItem('bingo_usate');
+        localStorage.removeItem('bingo_premi');
         location.reload(); 
     }
 }
