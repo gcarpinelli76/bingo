@@ -4,7 +4,6 @@ var selezioniAttuali = [];
 var cartelleUsate = [];
 var archivioCartelle = JSON.parse(localStorage.getItem('archivioBingo1000')) || [];
 
-// Funzione che crea il tabellone e le cartelle all'avvio
 function inizializzaTutto() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
@@ -18,7 +17,6 @@ function inizializzaTutto() {
     if (archivioCartelle.length > 0) disegnaSelettore();
 }
 
-// Chiamata immediata per blindare la visualizzazione
 window.onload = inizializzaTutto;
 
 function generaSerie90() {
@@ -70,27 +68,40 @@ function disegnaSelettore() {
     }
 }
 
+// FUNZIONE MODIFICATA PER INVIO MULTIPLO CON RITARDO
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
+    
     var baseUrl = window.location.href.split('vendita.html')[0];
-    selezioniAttuali.forEach((idS, index) => {
+    
+    // Copiamo la selezione per non perderla durante il ciclo
+    var daInviare = [...selezioniAttuali];
+
+    daInviare.forEach((idS, index) => {
+        // Aggiungiamo un ritardo di 1.5 secondi tra ogni apertura di WhatsApp
         setTimeout(function() {
             var datiCartella = archivioCartelle[idS - 1];
             var datiString = encodeURIComponent(JSON.stringify(datiCartella));
             var link = baseUrl + "cartella.html?id=" + idS + "&data=" + datiString;
             var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartella N. " + idS + "\n🔗 Link: " + link;
+            
             giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
             cartelleUsate.push(idS);
+            
             window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
-            if (index === selezioniAttuali.length - 1) {
+
+            // All'ultimo invio, puliamo la selezione e aggiorniamo la grafica
+            if (index === daInviare.length - 1) {
                 selezioniAttuali = [];
                 document.getElementById('cartella-corrente').innerText = "---";
+                document.getElementById('nome-giocatore').value = "";
+                document.getElementById('tel-giocatore').value = "";
                 disegnaSelettore(); 
                 aggiornaLista();
             }
-        }, index * 1000);
+        }, index * 1500); 
     });
 }
 
