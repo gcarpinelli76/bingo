@@ -15,19 +15,25 @@
             </div>
             <input type="text" id="nome-giocatore" placeholder="Nome Cliente" style="width: 100%; padding: 10px; margin-bottom: 5px;">
             <input type="text" id="tel-giocatore" placeholder="WhatsApp (es: 39333...)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
-            <button onclick="assegnaCartellaDaArchivio()" id="btn-estrai" style="background: #27ae60;">ASSEGNA E INVIA</button>
-            <button onclick="disegnaSelettore()" id="btn-nuova-partita">AGGIORNA GRIGLIA</button>
+            
+            <button onclick="assegnaCartellaDaArchivio()" id="btn-estrai" style="background: #27ae60; margin-bottom: 10px;">ASSEGNA E INVIA</button>
+            
             <a href="index.html" class="btn-nav">TORNA AL TABELLONE</a>
+
+            <button onclick="resetVendite()" id="btn-nuova-partita" style="margin-top: 60px; background: #c0392b; font-size: 0.8vw; opacity: 0.7; border: 1px solid white;">RIPRISTINO CARTELLE</button>
         </div>
+
         <div id="tabellone-container">
             <h1>Scegli le cartelle</h1>
             <div id="griglia-selezione" class="griglia-1000"></div>
         </div>
+
         <div id="classifica-container">
             <h2 style="font-size: 1.2vw;">ULTIME ASSEGNAZIONI</h2>
             <div id="lista-classifica" style="overflow-y: auto; flex-grow: 1;"></div>
         </div>
     </div>
+
     <script src="dati.js"></script>
     <script src="script.js"></script>
 </body>
