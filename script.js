@@ -4,7 +4,7 @@ var selezioniAttuali = [];
 var cartelleUsate = [];
 var archivioCartelle = JSON.parse(localStorage.getItem('archivioBingo1000')) || [];
 
-function inizializzaTutto() {
+window.onload = function() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
@@ -15,9 +15,7 @@ function inizializzaTutto() {
         }
     }
     if (archivioCartelle.length > 0) disegnaSelettore();
-}
-
-window.onload = inizializzaTutto;
+};
 
 function generaSerie90() {
     var serie = [];
@@ -37,7 +35,7 @@ function generaSerie90() {
 }
 
 function generaArchivioMille() {
-    if (archivioCartelle.length >= 1000 && !confirm("L'archivio esiste già. Resettare?")) return disegnaSelettore();
+    if (archivioCartelle.length >= 1000 && !confirm("Resettare l'archivio?")) return disegnaSelettore();
     archivioCartelle = [];
     for (var s = 0; s < 167; s++) archivioCartelle = archivioCartelle.concat(generaSerie90());
     archivioCartelle = archivioCartelle.slice(0, 1000);
@@ -53,10 +51,7 @@ function disegnaSelettore() {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        var classe = 'btn-selezione';
-        if (cartelleUsate.includes(num)) classe += ' occupato'; 
-        else if (selezioniAttuali.includes(num)) classe += ' selezionato';
-        btn.className = classe;
+        btn.className = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
         btn.onclick = (function(n) { return function() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
@@ -68,32 +63,27 @@ function disegnaSelettore() {
     }
 }
 
-// SOLUZIONE DEFINITIVA: MESSAGGIO UNICO CON TUTTI I LINK
+// INVIO UNICO LINK CON TUTTE LE CARTELLE [cite: 2026-02-12]
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
-    var corpoMessaggio = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\nEcco le tue cartelle:\n\n";
+    var pacchettoDati = [];
 
     selezioniAttuali.forEach((idS) => {
-        var datiCartella = archivioCartelle[idS - 1];
-        var datiString = encodeURIComponent(JSON.stringify(datiCartella));
-        var link = baseUrl + "cartella.html?id=" + idS + "&data=" + datiString;
-        
-        // Aggiunge ogni cartella al testo del messaggio
-        corpoMessaggio += "🎫 Cartella N. " + idS + "\n🔗 " + link + "\n\n";
-        
-        // Registra internamente la vendita
-        giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
+        pacchettoDati.push({ id: idS, numeri: archivioCartelle[idS - 1] });
+        giocatori.push({ nome: nome, tel: tel, cartella: archivioCartelle[idS - 1], id: idS });
         cartelleUsate.push(idS);
     });
 
-    // Apre WhatsApp una sola volta con tutto il contenuto
-    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(corpoMessaggio), '_blank');
+    var datiString = encodeURIComponent(JSON.stringify(pacchettoDati));
+    var linkUnico = baseUrl + "cartella.html?data=" + datiString;
+    var msg = "BINGO DIGITALE\nCiao " + nome.toUpperCase() + "!\n🎫 Hai " + selezioniAttuali.length + " cartelle.\n🔗 Clicca qui per vederle tutte:\n" + linkUnico;
 
-    // Pulisce l'interfaccia
+    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
+
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
     document.getElementById('nome-giocatore').value = "";
