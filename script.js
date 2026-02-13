@@ -57,7 +57,6 @@ function assegnaCartellaDaArchivio() {
     var idsString = selezioniAttuali.join(',');
 
     selezioniAttuali.forEach((idS) => {
-        // Qui salviamo i dati della cartella nell'oggetto giocatore per il controllo vincite
         giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
         cartelleUsate.push(idS);
     });
@@ -85,16 +84,13 @@ function estraiNumero() {
     var display = document.getElementById('numero-gigante');
     if (display) display.innerText = n;
     
-    // Il controllo ora avviene ESCLUSIVAMENTE sulle cartelle in 'giocatori'
     controllaVincite();
     aggiornaLista();
 }
 
 function controllaVincite() {
-    // Controllo limitato solo ai giocatori che hanno acquistato una cartella [cite: 2026-02-13]
     giocatori.forEach(g => {
         let numeriTotaliCartella = 0;
-        
         for (let r = 0; r < 3; r++) {
             let numeriInRiga = 0;
             for (let c = 0; c < 9; c++) {
@@ -104,7 +100,6 @@ function controllaVincite() {
                     numeriTotaliCartella++;
                 }
             }
-            
             if (numeriInRiga === 4 && !premiVinti.quaterna) {
                 annunciaVincitore("QUATERNA", g.nome, g.id);
                 premiVinti.quaterna = true;
@@ -114,7 +109,6 @@ function controllaVincite() {
                 premiVinti.cinquina = true;
             }
         }
-        
         if (numeriTotaliCartella === 15 && !premiVinti.bingo) {
             annunciaVincitore("BINGO", g.nome, g.id);
             premiVinti.bingo = true;
@@ -125,28 +119,32 @@ function controllaVincite() {
 
 function annunciaVincitore(tipo, nome, cartellaId) {
     let overlay = document.createElement('div');
-    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 15px solid #f1c40f;";
+    // Stile aggiornato con overflow per scrollare su schermi piccoli [cite: 2026-02-13]
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:20px; overflow-y:auto;";
     
     let titolo = tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo;
-    overlay.innerHTML = `<h1 style="font-size:12vw; margin:0; color:#f1c40f; text-shadow: 0 0 20px #f1c40f;">${titolo}</h1>
-                         <p style="font-size:6vw; margin:20px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
+    overlay.innerHTML = `<h1 style="font-size:10vw; margin:10px 0; color:#f1c40f;">${titolo}</h1>
+                         <p style="font-size:6vw; margin:10px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
                          <p style="font-size:4vw; color:#bdc3c7;">Cartella Numero: ${cartellaId}</p>
-                         <button onclick="this.parentElement.remove()" style="padding:20px 50px; font-size:3vw; cursor:pointer; background:#f1c40f; border:none; border-radius:15px; margin-top:30px; font-weight:bold;">OK, CONTINUA</button>`;
+                         <button onclick="this.parentElement.remove()" style="padding:15px 40px; font-size:4vw; cursor:pointer; background:#f1c40f; border:none; border-radius:10px; margin-top:20px; font-weight:bold; color:black;">CHIUDI</button>`;
     document.body.appendChild(overlay);
 }
 
+// RESET SOLO TABELLONE: Mantiene i giocatori e le loro cartelle [cite: 2026-02-13]
 function resetPartita() {
-    if (confirm("Vuoi resettare TUTTO (estrazioni e vendite)?")) {
-        localStorage.clear();
+    if (confirm("Vuoi resettare i numeri estratti? Le cartelle assegnate rimarranno ai clienti.")) {
+        localStorage.removeItem('bingo_estratti');
+        localStorage.removeItem('bingo_premi');
+        numeriUsciti = [];
+        premiVinti = { quaterna: false, cinquina: false, bingo: false };
         location.reload(); 
     }
 }
 
+// RESET TOTALE: Libera anche le cartelle vendute [cite: 2026-02-13]
 function resetVendite() {
-    if (confirm("Attenzione: vuoi liberare tutte le cartelle?")) {
-        localStorage.removeItem('bingo_giocatori');
-        localStorage.removeItem('bingo_usate');
-        localStorage.removeItem('bingo_premi');
+    if (confirm("Attenzione: vuoi liberare tutte le cartelle e cancellare l'elenco dei giocatori?")) {
+        localStorage.clear();
         location.reload(); 
     }
 }
