@@ -6,15 +6,27 @@
     <title>Le tue Cartelle</title>
     <style>
         body { font-family: sans-serif; background-color: #1e3a3a; color: white; text-align: center; padding: 10px; margin: 0; }
-        .box-cartella { margin-bottom: 40px; border-bottom: 2px dashed #f1c40f; padding-bottom: 20px; }
-        h2 { font-size: 6vw; color: #f1c40f; margin: 10px 0; }
-        .cartella { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; background: #000; border: 4px solid #000; margin: 0 auto; width: 95vw; }
-        .cella { aspect-ratio: 1/1; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 7vw; border-radius: 4px; }
-        .vuota { background: #263238; }
+        .box-cartella { margin-bottom: 30px; border-bottom: 2px solid #34495e; padding-bottom: 20px; }
+        h2 { font-size: 5vw; color: #f1c40f; margin: 10px 0; }
+        .cartella { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; background: #000; border: 3px solid #000; margin: 0 auto; width: 95vw; }
+        .cella { 
+            aspect-ratio: 1/1; background: #fff; color: #000; display: flex; 
+            align-items: center; justify-content: center; font-weight: bold; 
+            font-size: 6.5vw; border-radius: 4px; cursor: pointer; user-select: none;
+        }
+        .vuota { background: #2c3e50; border: none; }
+        /* Effetto Giallo quando il cliente clicca */
+        .segnato { background: #f1c40f !important; color: #000 !important; transform: scale(0.95); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        #btn-reset-client { 
+            margin-top: 20px; padding: 15px 30px; background: #c0392b; color: white; 
+            border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 4vw;
+        }
     </style>
 </head>
 <body>
     <div id="contenitore-cartelle"></div>
+    <button id="btn-reset-client" onclick="resetSegni()">PULISCI CARTELLE</button>
+
     <script src="dati.js"></script>
     <script>
         const params = new URLSearchParams(window.location.search);
@@ -25,20 +37,31 @@
             const contenitore = document.getElementById('contenitore-cartelle');
 
             ids.forEach(id => {
-                const datiCartella = ARCHIVIO_FISSO[parseInt(id) - 1];
+                const numId = parseInt(id);
+                const datiCartella = ARCHIVIO_FISSO[numId - 1];
+
                 if (datiCartella) {
                     const divBox = document.createElement('div');
                     divBox.className = 'box-cartella';
                     divBox.innerHTML = "<h2>CARTELLA N. " + id + "</h2>";
+                    
                     const divGriglia = document.createElement('div');
                     divGriglia.className = 'cartella';
+                    
                     for (let r = 0; r < 3; r++) {
                         for (let c = 0; c < 9; c++) {
                             const cella = document.createElement('div');
                             cella.className = 'cella';
                             const n = datiCartella[r][c];
-                            if (n === null) cella.classList.add('vuota');
-                            else cella.innerText = n;
+                            if (n === null) {
+                                cella.classList.add('vuota');
+                            } else {
+                                cella.innerText = n;
+                                // Funzione clicca e colora
+                                cella.onclick = function() {
+                                    this.classList.toggle('segnato');
+                                };
+                            }
                             divGriglia.appendChild(cella);
                         }
                     }
@@ -46,6 +69,13 @@
                     contenitore.appendChild(divBox);
                 }
             });
+        }
+
+        function resetSegni() {
+            if(confirm("Vuoi cancellare i segni gialli dalle cartelle?")) {
+                const segnati = document.querySelectorAll('.segnato');
+                segnati.forEach(el => el.classList.remove('segnato'));
+            }
         }
     </script>
 </body>
