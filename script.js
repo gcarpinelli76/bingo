@@ -2,9 +2,8 @@ var numeriUsciti = [];
 var giocatori = [];
 var selezioniAttuali = [];
 var cartelleUsate = [];
-var archivioCartelle = JSON.parse(localStorage.getItem('archivioBingo1000')) || [];
 
-window.onload = function() {
+function inizializzaTutto() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
@@ -14,40 +13,17 @@ window.onload = function() {
             tabellone.appendChild(div);
         }
     }
-    if (archivioCartelle.length > 0) disegnaSelettore();
-};
-
-function generaSerie90() {
-    var serie = [];
-    var pool = Array.from({length: 90}, (_, i) => i + 1).sort(() => Math.random() - 0.5);
-    for (var k = 0; k < 6; k++) serie.push(Array.from({length: 3}, () => Array(9).fill(null)));
-    pool.forEach(n => {
-        var col = n === 90 ? 8 : Math.floor(n / 10);
-        var inserito = false;
-        for (var t = 0; t < 200 && !inserito; t++) {
-            var cIdx = Math.floor(Math.random() * 6), rIdx = Math.floor(Math.random() * 3);
-            if (serie[cIdx][rIdx][col] === null && serie[cIdx][rIdx].filter(x => x !== null).length < 5) {
-                serie[cIdx][rIdx][col] = n; inserito = true;
-            }
-        }
-    });
-    return serie;
-}
-
-function generaArchivioMille() {
-    if (archivioCartelle.length >= 1000 && !confirm("Resettare l'archivio?")) return disegnaSelettore();
-    archivioCartelle = [];
-    for (var s = 0; s < 167; s++) archivioCartelle = archivioCartelle.concat(generaSerie90());
-    archivioCartelle = archivioCartelle.slice(0, 1000);
-    localStorage.setItem('archivioBingo1000', JSON.stringify(archivioCartelle));
     disegnaSelettore();
 }
+
+window.onload = inizializzaTutto;
 
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia) return;
     griglia.innerHTML = "";
-    for (var i = 0; i < archivioCartelle.length; i++) {
+    // Usiamo l'archivio fisso invece di quello casuale [cite: 2026-02-12]
+    for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
@@ -69,17 +45,16 @@ function assegnaCartellaDaArchivio() {
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
-    
-    // Inviamo solo gli ID separati da virgola (es: 26,27,50)
     var idsString = selezioniAttuali.join(',');
-    
+
     selezioniAttuali.forEach((idS) => {
-        giocatori.push({ nome: nome, tel: tel, cartella: archivioCartelle[idS - 1], id: idS });
+        giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
         cartelleUsate.push(idS);
     });
 
+    // Il link ora contiene solo i numeri delle cartelle (es: 1,2,3) [cite: 2026-02-12]
     var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
-    var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
+    var msg = "BINGO\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
 
     window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
 
