@@ -2,43 +2,45 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cartella Bingo</title>
+    <title>La tua Cartella</title>
     <style>
-        body { font-family: sans-serif; background-color: #1e3a3a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
-        .cartella-full { display: grid; grid-template-columns: repeat(9, 1fr); border: 4px solid #000; background: #fff; width: 95%; max-width: 600px; }
-        .cella { aspect-ratio: 1/1; border: 1px solid #333; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: bold; color: #000; }
-        .cella-numero { background-color: #f1c40f; }
-        .cella-vuota { background-color: #263238; }
-        h2 { color: #f1c40f; }
+        body { font-family: sans-serif; background-color: #1e3a3a; color: white; text-align: center; padding: 20px; }
+        .cartella { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; background: #000; border: 2px solid #000; margin: 20px auto; max-width: 500px; }
+        .cella { aspect-ratio: 1/1; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; }
+        .vuota { background: #263238; }
     </style>
 </head>
 <body>
-    <h2 id="titolo-cartella">CARTELLA</h2>
-    <div id="display-cartella" class="cartella-full"></div>
+    <h1 id="titolo">CARTELLA</h1>
+    <div id="griglia" class="cartella"></div>
     <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const cartellaId = parseInt(urlParams.get('id'));
-        const archivio = JSON.parse(localStorage.getItem('archivioBingo1000'));
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        const dataParam = params.get('data');
+        let dati;
 
-        if (cartellaId && archivio && archivio[cartellaId - 1]) {
-            document.getElementById('titolo-cartella').innerText = "CARTELLA N. " + cartellaId;
-            const dati = archivio[cartellaId - 1];
-            const container = document.getElementById('display-cartella');
+        // Recupero numeri dal link (per il telefono del cliente) [cite: 2026-02-12]
+        if (dataParam) {
+            dati = JSON.parse(decodeURIComponent(dataParam));
+        } else {
+            const archivio = JSON.parse(localStorage.getItem('archivioBingo1000'));
+            if (id && archivio) dati = archivio[id - 1];
+        }
+
+        if (dati) {
+            document.getElementById('titolo').innerText = "CARTELLA N. " + id;
+            const griglia = document.getElementById('griglia');
             for (let r = 0; r < 3; r++) {
                 for (let c = 0; c < 9; c++) {
                     const div = document.createElement('div');
-                    if (dati[r][c] === null) {
-                        div.className = 'cella cella-vuota';
-                    } else {
-                        div.className = 'cella cella-numero';
-                        div.innerText = dati[r][c];
-                    }
-                    container.appendChild(div);
+                    div.className = 'cella';
+                    if (dati[r][c] === null) div.classList.add('vuota');
+                    else div.innerText = dati[r][c];
+                    griglia.appendChild(div);
                 }
             }
         } else {
-            document.body.innerHTML = "<h2>Cartella non trovata</h2><p>Genera l'archivio nella pagina vendita.</p>";
+            document.body.innerHTML = "<h1>Cartella non trovata</h1><p>Richiedi un nuovo link.</p>";
         }
     </script>
 </body>
