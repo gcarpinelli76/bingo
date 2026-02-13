@@ -1,26 +1,34 @@
-var numeriUsciti = [];
-var giocatori = [];
+/ Recupero dati salvati o inizializzazione se vuoti [cite: 2026-01-29]
+var numeriUsciti = JSON.parse(localStorage.getItem('bingo_estratti')) || [];
+var giocatori = JSON.parse(localStorage.getItem('bingo_giocatori')) || [];
+var cartelleUsate = JSON.parse(localStorage.getItem('bingo_usate')) || [];
 var selezioniAttuali = [];
-var cartelleUsate = [];
 
-// Funzione di avvio corretta per far apparire le cartelle
 window.onload = function() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
         for (var i = 1; i <= 90; i++) {
             var div = document.createElement('div');
-            div.className = 'numero'; div.id = 'n' + i; div.innerText = i;
+            div.className = 'numero'; 
+            div.id = 'n' + i; 
+            div.innerText = i;
+            // Ripristina lo stato grafico se il numero era già estratto [cite: 2026-02-12]
+            if (numeriUsciti.includes(i)) {
+                div.className = 'numero estratto';
+            }
             tabellone.appendChild(div);
+        }
+        // Ripristina l'ultimo numero gigante visualizzato
+        if (numeriUsciti.length > 0) {
+            document.getElementById('numero-gigante').innerText = numeriUsciti[numeriUsciti.length - 1];
         }
     }
     
-    // Controlla se l'archivio fisso è pronto e disegna la griglia vendita
     if (typeof ARCHIVIO_FISSO !== 'undefined' && ARCHIVIO_FISSO.length > 0) {
         disegnaSelettore();
-    } else {
-        console.error("Archivio dati.js non trovato!");
     }
+    aggiornaLista(); // Mostra sempre le vendite effettuate
 };
 
 function disegnaSelettore() {
@@ -28,13 +36,10 @@ function disegnaSelettore() {
     if (!griglia) return;
     griglia.innerHTML = "";
     
-    // Ciclo sulle 1000 cartelle fisse
     for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        
-        // Mantiene lo stile CSS originale
         var classe = 'btn-selezione';
         if (cartelleUsate.includes(num)) classe += ' occupato'; 
         else if (selezioniAttuali.includes(num)) classe += ' selezionato';
@@ -64,6 +69,10 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
+    // Salvataggio permanente delle vendite [cite: 2026-01-29]
+    localStorage.setItem('bingo_giocatori', JSON.stringify(giocatori));
+    localStorage.setItem('bingo_usate', JSON.stringify(cartelleUsate));
+
     var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
     var msg = "BINGO\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
 
@@ -82,21 +91,35 @@ function estraiNumero() {
     var n;
     do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
+    
+    // Salvataggio immediato dell'estrazione [cite: 2026-02-12]
+    localStorage.setItem('bingo_estratti', JSON.stringify(numeriUsciti));
+    
     var el = document.getElementById('n' + n);
     if (el) el.className = 'numero estratto';
     document.getElementById('numero-gigante').innerText = n;
     aggiornaLista();
 }
 
+// Reset completo (Tabellone e Vendite) [cite: 2026-02-13]
 function resetPartita() {
-    if (confirm("Nuova Partita?")) {
+    if (confirm("Vuoi resettare TUTTO (estrazioni e vendite)?")) {
+        localStorage.clear();
         numeriUsciti = [];
-        document.getElementById('numero-gigante').innerText = "--";
-        for (var i = 1; i <= 90; i++) {
-            var el = document.getElementById('n' + i);
-            if (el) el.className = 'numero';
-        }
-        aggiornaLista();
+        giocatori = [];
+        cartelleUsate = [];
+        location.reload(); 
+    }
+}
+
+// Reset solo Vendite (per liberare le cartelle senza resettare il tabellone)
+function resetVendite() {
+    if (confirm("Vuoi resettare solo l'elenco delle vendite?")) {
+        localStorage.removeItem('bingo_giocatori');
+        localStorage.removeItem('bingo_usate');
+        giocatori = [];
+        cartelleUsate = [];
+        location.reload();
     }
 }
 
