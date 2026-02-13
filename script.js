@@ -68,19 +68,16 @@ function disegnaSelettore() {
     }
 }
 
-// FUNZIONE MODIFICATA PER INVIO MULTIPLO CON RITARDO
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
-    
-    // Copiamo la selezione per non perderla durante il ciclo
     var daInviare = [...selezioniAttuali];
 
     daInviare.forEach((idS, index) => {
-        // Aggiungiamo un ritardo di 1.5 secondi tra ogni apertura di WhatsApp
+        // RITARDO DI 1.5 SECONDI PER EVITARE IL BLOCCO BROWSER
         setTimeout(function() {
             var datiCartella = archivioCartelle[idS - 1];
             var datiString = encodeURIComponent(JSON.stringify(datiCartella));
@@ -92,7 +89,6 @@ function assegnaCartellaDaArchivio() {
             
             window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
 
-            // All'ultimo invio, puliamo la selezione e aggiorniamo la grafica
             if (index === daInviare.length - 1) {
                 selezioniAttuali = [];
                 document.getElementById('cartella-corrente').innerText = "---";
