@@ -46,7 +46,7 @@ body {
     border-radius: 10px; text-decoration: none; text-align: center; font-weight: bold; font-size: 0.9vw;
 }
 
-/* --- TABELLONE CENTRALE (DIMENSIONI FISSE) --- */
+/* --- TABELLONE CENTRALE --- */
 #tabellone-container { 
     flex-grow: 1; 
     display: flex; 
@@ -95,7 +95,7 @@ h1 {
     box-shadow: 0 0 15px #f1c40f; 
 }
 
-/* --- PAGINA VENDITA E OSCURAMENTO (RIPRISTINATO) --- */
+/* --- PAGINA VENDITA E OSCURAMENTO --- */
 #classifica-container { 
     width: 30%; 
     background: #cfd8dc; 
@@ -134,7 +134,7 @@ h1 {
     border: 1px solid black; 
 }
 
-/* Colore Rosso per le Cartelle Vendute */
+/* LOGICA OSCURAMENTO CARTELLE VENDUTE */
 .btn-selezione.occupato { 
     background-color: #c0392b !important; 
     color: white !important; 
