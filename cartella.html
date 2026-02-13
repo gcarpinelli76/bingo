@@ -2,11 +2,31 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>La tua Cartella</title>
     <style>
-        body { font-family: sans-serif; background-color: #1e3a3a; color: white; text-align: center; padding: 20px; }
-        .cartella { display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; background: #000; border: 2px solid #000; margin: 20px auto; max-width: 500px; }
-        .cella { aspect-ratio: 1/1; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 24px; }
+        body { font-family: sans-serif; background-color: #1e3a3a; color: white; text-align: center; padding: 10px; margin: 0; }
+        h1 { font-size: 8vw; margin: 20px 0; color: #f1c40f; }
+        .cartella { 
+            display: grid; 
+            grid-template-columns: repeat(9, 1fr); 
+            gap: 5px; 
+            background: #000; 
+            border: 5px solid #000; 
+            margin: 0 auto; 
+            width: 96vw;
+        }
+        .cella { 
+            aspect-ratio: 1/1; 
+            background: #fff; 
+            color: #000; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 8vw; 
+            border-radius: 5px;
+        }
         .vuota { background: #263238; }
     </style>
 </head>
@@ -17,17 +37,8 @@
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
         const dataParam = params.get('data');
-        let dati;
-
-        // Recupero numeri dal link (per il telefono del cliente) [cite: 2026-02-12]
         if (dataParam) {
-            dati = JSON.parse(decodeURIComponent(dataParam));
-        } else {
-            const archivio = JSON.parse(localStorage.getItem('archivioBingo1000'));
-            if (id && archivio) dati = archivio[id - 1];
-        }
-
-        if (dati) {
+            const dati = JSON.parse(decodeURIComponent(dataParam));
             document.getElementById('titolo').innerText = "CARTELLA N. " + id;
             const griglia = document.getElementById('griglia');
             for (let r = 0; r < 3; r++) {
@@ -40,7 +51,7 @@
                 }
             }
         } else {
-            document.body.innerHTML = "<h1>Cartella non trovata</h1><p>Richiedi un nuovo link.</p>";
+            document.body.innerHTML = "<h1>Cartella non trovata</h1>";
         }
     </script>
 </body>
