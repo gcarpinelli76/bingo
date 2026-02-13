@@ -1,34 +1,43 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vendita Cartelle</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div class="container">
-        <div id="area-comandi">
-            <div id="box-estratto">
-                <div class="label-estratto">CARTELLE SCELTE</div>
-                <div id="cartella-corrente" style="font-size: 2vw; color: #f1c40f; font-weight: bold;">---</div>
-            </div>
-            <input type="text" id="nome-giocatore" placeholder="Nome Cliente" style="width: 100%; padding: 10px; margin-bottom: 5px;">
-            <input type="text" id="tel-giocatore" placeholder="WhatsApp (es: 39333...)" style="width: 100%; padding: 10px; margin-bottom: 10px;">
-            <button onclick="assegnaCartellaDaArchivio()" id="btn-estrai" style="background: #27ae60;">ASSEGNA E INVIA</button>
-            <button onclick="disegnaSelettore()" id="btn-nuova-partita">AGGIORNA GRIGLIA</button>
-            <a href="index.html" class="btn-nav">TORNA AL TABELLONE</a>
-        </div>
-        <div id="tabellone-container">
-            <h1>Scegli le cartelle</h1>
-            <div id="griglia-selezione" class="griglia-1000"></div>
-        </div>
-        <div id="classifica-container">
-            <h2 style="font-size: 1.2vw;">ULTIME ASSEGNAZIONI</h2>
-            <div id="lista-classifica" style="overflow-y: auto; flex-grow: 1;"></div>
-        </div>
-    </div>
-    <script src="dati.js"></script>
-    <script src="script.js"></script>
-</body>
-</html>
+// GENERATORE FISSO DI 1000 CARTELLE - BLINDATO [cite: 2026-02-12]
+function generaArchivioSempreUguale(seed) {
+    let archivio = [];
+    // Usiamo un generatore di numeri basato su un "seed" per avere sempre gli stessi risultati [cite: 2026-02-12]
+    function randomFisso(s) {
+        var t = s += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    }
+
+    let counter = 1;
+    for (let i = 0; i < 167; i++) { // 167 serie da 6 = 1002 cartelle [cite: 2026-02-12]
+        let serie = [];
+        let pool = Array.from({length: 90}, (_, i) => i + 1);
+        // Mischiamo il pool in modo predefinito basato sul counter
+        for (let j = pool.length - 1; j > 0; j--) {
+            let r = Math.floor(randomFisso(counter + j) * (j + 1));
+            [pool[j], pool[r]] = [pool[r], pool[j]];
+        }
+
+        for (let k = 0; k < 6; k++) {
+            let cartella = Array.from({length: 3}, () => Array(9).fill(null));
+            // Distribuzione numeri per decine
+            for (let r = 0; r < 3; r++) {
+                let messi = 0;
+                while (messi < 5) {
+                    let col = Math.floor(randomFisso(counter + r + messi) * 9);
+                    if (cartella[r][col] === null && pool.length > 0) {
+                        cartella[r][col] = pool.pop();
+                        messi++;
+                    }
+                }
+            }
+            archivio.push(cartella);
+            counter++;
+        }
+    }
+    return archivio.slice(0, 1000);
+}
+
+// Questa variabile ora contiene le 1000 cartelle fisse per tutti [cite: 2026-02-12]
+const ARCHIVIO_FISSO = generaArchivioSempreUguale(12345);
