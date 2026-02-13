@@ -3,7 +3,8 @@ var giocatori = [];
 var selezioniAttuali = [];
 var cartelleUsate = [];
 
-function inizializzaTutto() {
+// Funzione di avvio corretta per far apparire le cartelle
+window.onload = function() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
@@ -13,21 +14,32 @@ function inizializzaTutto() {
             tabellone.appendChild(div);
         }
     }
-    disegnaSelettore();
-}
-
-window.onload = inizializzaTutto;
+    
+    // Controlla se l'archivio fisso è pronto e disegna la griglia vendita
+    if (typeof ARCHIVIO_FISSO !== 'undefined' && ARCHIVIO_FISSO.length > 0) {
+        disegnaSelettore();
+    } else {
+        console.error("Archivio dati.js non trovato!");
+    }
+};
 
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia) return;
     griglia.innerHTML = "";
-    // Usiamo l'archivio fisso invece di quello casuale [cite: 2026-02-12]
+    
+    // Ciclo sulle 1000 cartelle fisse
     for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        btn.className = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
+        
+        // Mantiene lo stile CSS originale
+        var classe = 'btn-selezione';
+        if (cartelleUsate.includes(num)) classe += ' occupato'; 
+        else if (selezioniAttuali.includes(num)) classe += ' selezionato';
+        btn.className = classe;
+        
         btn.onclick = (function(n) { return function() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
@@ -52,7 +64,6 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
-    // Il link ora contiene solo i numeri delle cartelle (es: 1,2,3) [cite: 2026-02-12]
     var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
     var msg = "BINGO\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
 
