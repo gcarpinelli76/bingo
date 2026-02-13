@@ -119,15 +119,18 @@ function controllaVincite() {
 
 function annunciaVincitore(tipo, nome, cartellaId) {
     let overlay = document.createElement('div');
-    // Stile aggiornato con overflow per scrollare su schermi piccoli [cite: 2026-02-13]
-    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:20px; overflow-y:auto;";
+    // Stile compatto: ridotti i margini e le dimensioni per alzare il tasto [cite: 2026-02-13]
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:10px;";
     
     let titolo = tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo;
-    overlay.innerHTML = `<h1 style="font-size:10vw; margin:10px 0; color:#f1c40f;">${titolo}</h1>
-                         <p style="font-size:6vw; margin:10px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
-                         <p style="font-size:4vw; color:#bdc3c7;">Cartella Numero: ${cartellaId}</p>
-                         <button onclick="this.parentElement.remove()" style="padding:15px 40px; font-size:4vw; cursor:pointer; background:#f1c40f; border:none; border-radius:10px; margin-top:20px; font-weight:bold; color:black;">CHIUDI</button>`;
+    overlay.innerHTML = `
+        <h1 style="font-size:9vw; margin:5px 0; color:#f1c40f;">${titolo}</h1>
+        <p style="font-size:5vw; margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
+        <p style="font-size:3.5vw; color:#bdc3c7; margin:5px 0;">Cartella N. ${cartellaId}</p>
+        <button onclick="this.parentElement.remove()" style="padding:10px 35px; font-size:4vw; cursor:pointer; background:#f1c40f; border:none; border-radius:10px; margin-top:15px; font-weight:bold; color:black; text-transform:uppercase;">Chiudi</button>
+    `;
     document.body.appendChild(overlay);
+}
 }
 
 // RESET SOLO TABELLONE: Mantiene i giocatori e le loro cartelle [cite: 2026-02-13]
@@ -168,3 +171,4 @@ function aggiornaLista() {
         lista.appendChild(d);
     });
 }
+
