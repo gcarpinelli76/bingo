@@ -63,27 +63,36 @@ function disegnaSelettore() {
     }
 }
 
-// INVIO UNICO LINK CON TUTTE LE CARTELLE [cite: 2026-02-12]
+// FUNZIONE PER CREARE IL LINK UNICO
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
-    var pacchettoDati = [];
+    
+    // Creiamo un array che contiene tutte le cartelle scelte
+    var pacchettoPerLink = [];
 
     selezioniAttuali.forEach((idS) => {
-        pacchettoDati.push({ id: idS, numeri: archivioCartelle[idS - 1] });
-        giocatori.push({ nome: nome, tel: tel, cartella: archivioCartelle[idS - 1], id: idS });
+        var datiCartella = archivioCartelle[idS - 1];
+        pacchettoPerLink.push({ id: idS, numeri: datiCartella });
+        
+        // Salvataggio interno per la tua lista vendite
+        giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
         cartelleUsate.push(idS);
     });
 
-    var datiString = encodeURIComponent(JSON.stringify(pacchettoDati));
-    var linkUnico = baseUrl + "cartella.html?data=" + datiString;
-    var msg = "BINGO DIGITALE\nCiao " + nome.toUpperCase() + "!\n🎫 Hai " + selezioniAttuali.length + " cartelle.\n🔗 Clicca qui per vederle tutte:\n" + linkUnico;
+    // TRASFORMIAMO TUTTO IL PACCHETTO IN UN SOLO LINK
+    var datiStringati = encodeURIComponent(JSON.stringify(pacchettoPerLink));
+    var linkUnico = baseUrl + "cartella.html?data=" + datiStringati;
+    
+    var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle acquistate: " + selezioniAttuali.length + "\n\n🔗 Clicca qui per giocare:\n" + linkUnico;
 
+    // APRE WHATSAPP UNA SOLA VOLTA CON IL LINK UNICO
     window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
 
+    // Reset interfaccia
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
     document.getElementById('nome-giocatore').value = "";
