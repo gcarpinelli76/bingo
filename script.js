@@ -1,11 +1,10 @@
-// Recupero sicuro dei dati o inizializzazione array vuoti
+// Recupero dati o inizializzazione [cite: 2026-01-29]
 var numeriUsciti = JSON.parse(localStorage.getItem('bingo_estratti')) || [];
 var giocatori = JSON.parse(localStorage.getItem('bingo_giocatori')) || [];
 var cartelleUsate = JSON.parse(localStorage.getItem('bingo_usate')) || [];
 var selezioniAttuali = [];
 
 window.onload = function() {
-    // 1. Inizializzazione Tabellone (se presente nella pagina)
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
@@ -16,21 +15,15 @@ window.onload = function() {
             div.innerText = i;
             tabellone.appendChild(div);
         }
-        // Ripristina l'ultimo numero estratto nel box gigante
         if (numeriUsciti.length > 0) {
-            var ultimo = numeriUsciti[numeriUsciti.length - 1];
             var display = document.getElementById('numero-gigante');
-            if (display) display.innerText = ultimo;
+            if (display) display.innerText = numeriUsciti[numeriUsciti.length - 1];
         }
     }
     
-    // 2. Inizializzazione Griglia Vendita (se presente nella pagina)
-    // Controlla che ARCHIVIO_FISSO (da dati.js) sia caricato
     if (typeof ARCHIVIO_FISSO !== 'undefined') {
         disegnaSelettore();
     }
-    
-    // 3. Aggiorna sempre la lista delle vendite effettuate
     aggiornaLista();
 };
 
@@ -39,42 +32,32 @@ function disegnaSelettore() {
     if (!griglia) return;
     griglia.innerHTML = "";
     
-    // Usiamo l'archivio fisso da 1000 cartelle
     for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        
         var classe = 'btn-selezione';
         if (cartelleUsate.includes(num)) classe += ' occupato'; 
         else if (selezioniAttuali.includes(num)) classe += ' selezionato';
         btn.className = classe;
         
-        btn.onclick = (function(n) { 
-            return function() {
-                if (cartelleUsate.includes(n)) return;
-                var idx = selezioniAttuali.indexOf(n);
-                if (idx === -1) selezioniAttuali.push(n); 
-                else selezioniAttuali.splice(idx, 1);
-                
-                var displaySelezionate = document.getElementById('cartella-corrente');
-                if (displaySelezionate) {
-                    displaySelezionate.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
-                }
-                disegnaSelettore();
-            }; 
-        })(num);
+        btn.onclick = (function(n) { return function() {
+            if (cartelleUsate.includes(n)) return;
+            var idx = selezioniAttuali.indexOf(n);
+            if (idx === -1) selezioniAttuali.push(n); else selezioniAttuali.splice(idx, 1);
+            var curr = document.getElementById('cartella-corrente');
+            if (curr) curr.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
+            disegnaSelettore();
+        }; })(num);
         griglia.appendChild(btn);
     }
 }
 
 function assegnaCartellaDaArchivio() {
-    var nomeInput = document.getElementById('nome-giocatore');
-    var telInput = document.getElementById('tel-giocatore');
-    if (!nomeInput || !telInput) return;
-
-    var nome = nomeInput.value;
-    var tel = telInput.value;
+    var nomeIn = document.getElementById('nome-giocatore');
+    var telIn = document.getElementById('tel-giocatore');
+    if (!nomeIn || !telIn) return;
+    var nome = nomeIn.value; var tel = telIn.value;
     
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
@@ -86,43 +69,43 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
-    // Salvataggio permanente
     localStorage.setItem('bingo_giocatori', JSON.stringify(giocatori));
     localStorage.setItem('bingo_usate', JSON.stringify(cartelleUsate));
 
     var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
     var msg = "BINGO\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
-
     window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
 
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
-    nomeInput.value = "";
-    telInput.value = "";
-    disegnaSelettore(); 
-    aggiornaLista();
+    nomeIn.value = ""; telIn.value = "";
+    disegnaSelettore(); aggiornaLista();
 }
 
 function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
-    var n;
-    do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
+    var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
-    
     localStorage.setItem('bingo_estratti', JSON.stringify(numeriUsciti));
-    
     var el = document.getElementById('n' + n);
     if (el) el.className = 'numero estratto';
-    
     var display = document.getElementById('numero-gigante');
     if (display) display.innerText = n;
-    
     aggiornaLista();
 }
 
 function resetPartita() {
     if (confirm("Vuoi resettare TUTTO (estrazioni e vendite)?")) {
         localStorage.clear();
+        location.reload(); 
+    }
+}
+
+// NUOVA FUNZIONE: Ripristina solo le cartelle senza toccare il tabellone [cite: 2026-02-13]
+function resetVendite() {
+    if (confirm("Attenzione: vuoi liberare tutte le cartelle? I numeri già estratti rimarranno segnati.")) {
+        localStorage.removeItem('bingo_giocatori');
+        localStorage.removeItem('bingo_usate');
         location.reload(); 
     }
 }
