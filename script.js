@@ -1,20 +1,24 @@
-var tabellone = document.getElementById('tabellone');
+// --- INIZIALIZZAZIONE IMMEDIATA ---
+document.addEventListener("DOMContentLoaded", function() {
+    var tabellone = document.getElementById('tabellone');
+    if (tabellone) {
+        tabellone.innerHTML = "";
+        for (var i = 1; i <= 90; i++) {
+            var div = document.createElement('div');
+            div.className = 'numero'; div.id = 'n' + i; div.innerText = i;
+            tabellone.appendChild(div);
+        }
+    }
+    if (typeof disegnaSelettore === "function" && archivioCartelle.length > 0) {
+        disegnaSelettore();
+    }
+});
+
 var numeriUsciti = [];
 var giocatori = [];
 var selezioniAttuali = [];
 var cartelleUsate = [];
-
-// Recupero archivio fisso di 1000 cartelle
 var archivioCartelle = JSON.parse(localStorage.getItem('archivioBingo1000')) || [];
-
-if (tabellone) {
-    tabellone.innerHTML = "";
-    for (var i = 1; i <= 90; i++) {
-        var div = document.createElement('div');
-        div.className = 'numero'; div.id = 'n' + i; div.innerText = i;
-        tabellone.appendChild(div);
-    }
-}
 
 function generaSerie90() {
     var serie = [];
@@ -69,13 +73,64 @@ function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
-
     var baseUrl = window.location.href.split('vendita.html')[0];
-
     selezioniAttuali.forEach(idS => {
         var datiCartella = archivioCartelle[idS - 1];
         var datiString = encodeURIComponent(JSON.stringify(datiCartella));
-        // Il link ora trasporta i dati per il telefono
         var link = baseUrl + "cartella.html?id=" + idS + "&data=" + datiString;
-        
-        var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartella N. " + idS + "\n🔗 Link:
+        var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartella N. " + idS + "\n🔗 Link: " + link;
+        giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
+        cartelleUsate.push(idS);
+        window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
+    });
+    selezioniAttuali = [];
+    document.getElementById('cartella-corrente').innerText = "---";
+    document.getElementById('nome-giocatore').value = "";
+    document.getElementById('tel-giocatore').value = "";
+    disegnaSelettore(); 
+    aggiornaLista();
+}
+
+function estraiNumero() {
+    var gigante = document.getElementById('numero-gigante');
+    if (numeriUsciti.length >= 90) return;
+    var n;
+    do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
+    numeriUsciti.push(n);
+    var el = document.getElementById('n' + n);
+    if (el) el.className = 'numero estratto';
+    if (gigante) gigante.innerText = n;
+    aggiornaLista();
+}
+
+function resetPartita() {
+    if (confirm("Iniziare una Nuova Partita?")) {
+        numeriUsciti = [];
+        document.getElementById('numero-gigante').innerText = "--";
+        for (var i = 1; i <= 90; i++) {
+            var el = document.getElementById('n' + i);
+            if (el) el.className = 'numero';
+        }
+        aggiornaLista();
+    }
+}
+
+function aggiornaLista() {
+    var lista = document.getElementById('lista-classifica');
+    if (!lista) return;
+    lista.innerHTML = "";
+    giocatori.slice().reverse().forEach(g => {
+        var d = document.createElement('div');
+        d.innerHTML = "<strong>👤 " + g.nome + "</strong> (C. " + g.id + ")";
+        var html = '<div class="cartella-mini">';
+        for (var r = 0; r < 3; r++) {
+            for (var c = 0; c < 9; c++) {
+                var n = g.cartella[r][c];
+                var estr = (n !== null && numeriUsciti.includes(n)) ? ' estratto-mini' : '';
+                html += n === null ? '<div class="cella-mini cella-vuota"></div>' : '<div class="cella-mini' + estr + '">' + n + '</div>';
+            }
+        }
+        d.innerHTML += html + '</div>';
+        lista.appendChild(d);
+    });
+}
