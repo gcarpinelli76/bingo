@@ -1,34 +1,37 @@
-/ Recupero dati salvati o inizializzazione se vuoti [cite: 2026-01-29]
+// Recupero sicuro dei dati o inizializzazione array vuoti
 var numeriUsciti = JSON.parse(localStorage.getItem('bingo_estratti')) || [];
 var giocatori = JSON.parse(localStorage.getItem('bingo_giocatori')) || [];
 var cartelleUsate = JSON.parse(localStorage.getItem('bingo_usate')) || [];
 var selezioniAttuali = [];
 
 window.onload = function() {
+    // 1. Inizializzazione Tabellone (se presente nella pagina)
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
         for (var i = 1; i <= 90; i++) {
             var div = document.createElement('div');
-            div.className = 'numero'; 
-            div.id = 'n' + i; 
+            div.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
+            div.id = 'n' + i;
             div.innerText = i;
-            // Ripristina lo stato grafico se il numero era già estratto [cite: 2026-02-12]
-            if (numeriUsciti.includes(i)) {
-                div.className = 'numero estratto';
-            }
             tabellone.appendChild(div);
         }
-        // Ripristina l'ultimo numero gigante visualizzato
+        // Ripristina l'ultimo numero estratto nel box gigante
         if (numeriUsciti.length > 0) {
-            document.getElementById('numero-gigante').innerText = numeriUsciti[numeriUsciti.length - 1];
+            var ultimo = numeriUsciti[numeriUsciti.length - 1];
+            var display = document.getElementById('numero-gigante');
+            if (display) display.innerText = ultimo;
         }
     }
     
-    if (typeof ARCHIVIO_FISSO !== 'undefined' && ARCHIVIO_FISSO.length > 0) {
+    // 2. Inizializzazione Griglia Vendita (se presente nella pagina)
+    // Controlla che ARCHIVIO_FISSO (da dati.js) sia caricato
+    if (typeof ARCHIVIO_FISSO !== 'undefined') {
         disegnaSelettore();
     }
-    aggiornaLista(); // Mostra sempre le vendite effettuate
+    
+    // 3. Aggiorna sempre la lista delle vendite effettuate
+    aggiornaLista();
 };
 
 function disegnaSelettore() {
@@ -36,29 +39,43 @@ function disegnaSelettore() {
     if (!griglia) return;
     griglia.innerHTML = "";
     
+    // Usiamo l'archivio fisso da 1000 cartelle
     for (var i = 0; i < ARCHIVIO_FISSO.length; i++) {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
+        
         var classe = 'btn-selezione';
         if (cartelleUsate.includes(num)) classe += ' occupato'; 
         else if (selezioniAttuali.includes(num)) classe += ' selezionato';
         btn.className = classe;
         
-        btn.onclick = (function(n) { return function() {
-            if (cartelleUsate.includes(n)) return;
-            var idx = selezioniAttuali.indexOf(n);
-            if (idx === -1) selezioniAttuali.push(n); else selezioniAttuali.splice(idx, 1);
-            document.getElementById('cartella-corrente').innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
-            disegnaSelettore();
-        }; })(num);
+        btn.onclick = (function(n) { 
+            return function() {
+                if (cartelleUsate.includes(n)) return;
+                var idx = selezioniAttuali.indexOf(n);
+                if (idx === -1) selezioniAttuali.push(n); 
+                else selezioniAttuali.splice(idx, 1);
+                
+                var displaySelezionate = document.getElementById('cartella-corrente');
+                if (displaySelezionate) {
+                    displaySelezionate.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
+                }
+                disegnaSelettore();
+            }; 
+        })(num);
         griglia.appendChild(btn);
     }
 }
 
 function assegnaCartellaDaArchivio() {
-    var nome = document.getElementById('nome-giocatore').value;
-    var tel = document.getElementById('tel-giocatore').value;
+    var nomeInput = document.getElementById('nome-giocatore');
+    var telInput = document.getElementById('tel-giocatore');
+    if (!nomeInput || !telInput) return;
+
+    var nome = nomeInput.value;
+    var tel = telInput.value;
+    
     if (selezioniAttuali.length === 0 || nome === "" || tel === "") return alert("Dati incompleti!");
     
     var baseUrl = window.location.href.split('vendita.html')[0];
@@ -69,7 +86,7 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
-    // Salvataggio permanente delle vendite [cite: 2026-01-29]
+    // Salvataggio permanente
     localStorage.setItem('bingo_giocatori', JSON.stringify(giocatori));
     localStorage.setItem('bingo_usate', JSON.stringify(cartelleUsate));
 
@@ -80,8 +97,8 @@ function assegnaCartellaDaArchivio() {
 
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
-    document.getElementById('nome-giocatore').value = "";
-    document.getElementById('tel-giocatore').value = "";
+    nomeInput.value = "";
+    telInput.value = "";
     disegnaSelettore(); 
     aggiornaLista();
 }
@@ -92,34 +109,21 @@ function estraiNumero() {
     do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
     
-    // Salvataggio immediato dell'estrazione [cite: 2026-02-12]
     localStorage.setItem('bingo_estratti', JSON.stringify(numeriUsciti));
     
     var el = document.getElementById('n' + n);
     if (el) el.className = 'numero estratto';
-    document.getElementById('numero-gigante').innerText = n;
+    
+    var display = document.getElementById('numero-gigante');
+    if (display) display.innerText = n;
+    
     aggiornaLista();
 }
 
-// Reset completo (Tabellone e Vendite) [cite: 2026-02-13]
 function resetPartita() {
     if (confirm("Vuoi resettare TUTTO (estrazioni e vendite)?")) {
         localStorage.clear();
-        numeriUsciti = [];
-        giocatori = [];
-        cartelleUsate = [];
         location.reload(); 
-    }
-}
-
-// Reset solo Vendite (per liberare le cartelle senza resettare il tabellone)
-function resetVendite() {
-    if (confirm("Vuoi resettare solo l'elenco delle vendite?")) {
-        localStorage.removeItem('bingo_giocatori');
-        localStorage.removeItem('bingo_usate');
-        giocatori = [];
-        cartelleUsate = [];
-        location.reload();
     }
 }
 
