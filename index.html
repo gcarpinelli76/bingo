@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Bingo Digitale - Tabellone</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="area-comandi">
+            <div id="box-estratto">
+                <div class="label-estratto">ESTRATTO</div>
+                <div id="numero-gigante">--</div>
+            </div>
+            <button onclick="estraiNumero()" id="btn-estrai">ESTRAI</button>
+            <button onclick="resetPartita()" id="btn-nuova-partita">NUOVA PARTITA</button>
+            <a href="vendita.html" class="btn-nav">VENDITA →</a>
+        </div>
+
+        <div id="tabellone-container">
+            <h1>🎫 BINGO DIGITALE</h1>
+            <div id="tabellone" class="grid-90"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
