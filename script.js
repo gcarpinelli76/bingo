@@ -63,7 +63,6 @@ function disegnaSelettore() {
     }
 }
 
-// FUNZIONE PER CREARE IL LINK UNICO
 function assegnaCartellaDaArchivio() {
     var nome = document.getElementById('nome-giocatore').value;
     var tel = document.getElementById('tel-giocatore').value;
@@ -71,28 +70,19 @@ function assegnaCartellaDaArchivio() {
     
     var baseUrl = window.location.href.split('vendita.html')[0];
     
-    // Creiamo un array che contiene tutte le cartelle scelte
-    var pacchettoPerLink = [];
-
+    // Inviamo solo gli ID separati da virgola (es: 26,27,50)
+    var idsString = selezioniAttuali.join(',');
+    
     selezioniAttuali.forEach((idS) => {
-        var datiCartella = archivioCartelle[idS - 1];
-        pacchettoPerLink.push({ id: idS, numeri: datiCartella });
-        
-        // Salvataggio interno per la tua lista vendite
-        giocatori.push({ nome: nome, tel: tel, cartella: datiCartella, id: idS });
+        giocatori.push({ nome: nome, tel: tel, cartella: archivioCartelle[idS - 1], id: idS });
         cartelleUsate.push(idS);
     });
 
-    // TRASFORMIAMO TUTTO IL PACCHETTO IN UN SOLO LINK
-    var datiStringati = encodeURIComponent(JSON.stringify(pacchettoPerLink));
-    var linkUnico = baseUrl + "cartella.html?data=" + datiStringati;
-    
-    var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle acquistate: " + selezioniAttuali.length + "\n\n🔗 Clicca qui per giocare:\n" + linkUnico;
+    var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
+    var msg = "BINGO DIGITALE\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
 
-    // APRE WHATSAPP UNA SOLA VOLTA CON IL LINK UNICO
     window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent(msg), '_blank');
 
-    // Reset interfaccia
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
     document.getElementById('nome-giocatore').value = "";
