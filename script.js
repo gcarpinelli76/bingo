@@ -14,18 +14,13 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-// VARIABILI ORIGINALI [cite: 2026-01-29, 2026-02-12]
-var numeriUsciti = [];
-var giocatori = [];
-var cartelleUsate = [];
+var numeriUsciti = [], giocatori = [], cartelleUsate = [], selezioniAttuali = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
-var selezioniAttuali = [];
 
-// --- DISEGNO IMMEDIATO AL CARICAMENTO --- [cite: 2026-02-13]
-window.onload = function() {
+// --- DISEGNO IMMEDIATO (Protezione contro lo schermo bianco) --- [cite: 2026-02-13]
+function disegnaTabelloneFisso() {
     var tabellone = document.getElementById('tabellone');
-    if (tabellone) {
-        tabellone.innerHTML = "";
+    if (tabellone && tabellone.innerHTML === "") {
         for (var i = 1; i <= 90; i++) {
             var div = document.createElement('div');
             div.className = 'numero';
@@ -33,19 +28,27 @@ window.onload = function() {
             tabellone.appendChild(div);
         }
     }
-    // Avvio ascolto Cloud [cite: 2026-02-14]
+}
+
+// Avvio istantaneo [cite: 2026-02-13]
+window.onload = function() {
+    disegnaTabelloneFisso();
+    if (typeof ARCHIVIO_FISSO !== 'undefined') disegnaSelettore();
+    
+    // Ascolto Cloud [cite: 2026-02-14]
     db.ref('bingo/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         numeriUsciti = data.estratti || [];
         giocatori = data.giocatori || [];
         cartelleUsate = data.usate || [];
         premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
-        aggiornaTutto();
+        
+        aggiornaStatoGrafico();
     });
 };
 
-function aggiornaTutto() {
-    // Aggiorna colori numeri estratti [cite: 2026-02-13]
+function aggiornaStatoGrafico() {
+    disegnaTabelloneFisso();
     for (var i = 1; i <= 90; i++) {
         var el = document.getElementById('n' + i);
         if (el) el.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
@@ -88,12 +91,11 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
-    // Invia vendite al Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
 
     var baseUrl = window.location.href.split('vendita.html')[0];
     var linkUnico = baseUrl + "cartella.html?ids=" + selezioniAttuali.join(',');
-    var msg = "BINGO\nCliente: " + nomeIn.value.toUpperCase() + "\n🎫 Cartelle: " + selezioniAttuali.join(',') + "\n🔗 Link unico:\n" + linkUnico;
+    var msg = "BINGO\nLink unico:\n" + linkUnico;
     window.open("https://api.whatsapp.com/send?phone=" + telIn.value + "&text=" + encodeURIComponent(msg), '_blank');
 
     selezioniAttuali = [];
@@ -104,8 +106,6 @@ function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
     var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
-    
-    // Invia estrazione al Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ estratti: numeriUsciti });
     controllaVincite();
 }
@@ -124,14 +124,13 @@ function controllaVincite() {
         }
         if (tot === 15 && !premiVinti.bingo) { annunciaVincitore("BINGO", g.nome, g.id); premiVinti.bingo = true; }
     });
-    // Sincronizza premi sul Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ premi: premiVinti });
 }
 
 function annunciaVincitore(tipo, nome, id) {
     let div = document.createElement('div');
     div.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;color:white;text-align:center;padding:10px;border:10px solid #f1c40f;box-sizing:border-box;";
-    div.innerHTML = <h1 style="font-size:9vw;margin:5px 0;color:#f1c40f;">${tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo}</h1><p style="font-size:5vw;margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p><p style="font-size:3.5vw;color:#bdc3c7;margin:5px 0;">Cartella N. ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 35px;font-size:4vw;background:#f1c40f;border:none;border-radius:10px;margin-top:15px;font-weight:bold;color:black;">CHIUDI</button>;
+    div.innerHTML = <h1 style="font-size:9vw;margin:5px 0;color:#f1c40f;">${tipo}</h1><p style="font-size:5vw;margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p><p style="font-size:3.5vw;color:#bdc3c7;margin:5px 0;">Cartella N. ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 35px;font-size:4vw;background:#f1c40f;border:none;border-radius:10px;margin-top:15px;font-weight:bold;color:black;">CHIUDI</button>;
     document.body.appendChild(div);
 }
 
