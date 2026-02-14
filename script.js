@@ -1,3 +1,4 @@
+// CONFIGURAZIONE FIREBASE [cite: 2026-02-14]
 const firebaseConfig = {
   apiKey: "AIzaSyAMLbvGWyNxMa-CUKq7-SjJJ8tWOPg4xWQ",
   authDomain: "bingolive-33748.firebaseapp.com",
@@ -11,21 +12,12 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
+// Variabili globali mantenute [cite: 2026-01-29, 2026-02-12]
 var numeriUsciti = [], giocatori = [], cartelleUsate = [], selezioniAttuali = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 
-db.ref('bingo/').on('value', (snapshot) => {
-    const data = snapshot.val() || {};
-    numeriUsciti = data.estratti || [];
-    giocatori = data.giocatori || [];
-    cartelleUsate = data.usate || [];
-    premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
-    aggiornaGraficaTabellone();
-    disegnaSelettore();
-    aggiornaLista();
-});
-
-function aggiornaGraficaTabellone() {
+// 1. Inizializzazione Tabellone (Grafica confermata) [cite: 2026-02-13]
+function disegnaStrutturaTabellone() {
     var tab = document.getElementById('tabellone');
     if (tab && tab.innerHTML === "") {
         for (var i = 1; i <= 90; i++) {
@@ -34,6 +26,23 @@ function aggiornaGraficaTabellone() {
             tab.appendChild(div);
         }
     }
+}
+
+// 2. Ascolto Cloud Realtime [cite: 2026-02-14]
+db.ref('bingo/').on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    numeriUsciti = data.estratti || [];
+    giocatori = data.giocatori || [];
+    cartelleUsate = data.usate || [];
+    premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
+    
+    disegnaStrutturaTabellone();
+    aggiornaColoriTabellone();
+    disegnaSelettore();
+    aggiornaListaVendite();
+});
+
+function aggiornaColoriTabellone() {
     for (var i = 1; i <= 90; i++) {
         var el = document.getElementById('n' + i);
         if (el) el.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
@@ -42,6 +51,7 @@ function aggiornaGraficaTabellone() {
     if (display) display.innerText = numeriUsciti.length > 0 ? numeriUsciti[numeriUsciti.length - 1] : "--";
 }
 
+// 3. Selezione Cartelle (Archivio 1000 confermato) [cite: 2026-02-12]
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia || typeof ARCHIVIO_FISSO === 'undefined') return;
@@ -55,41 +65,31 @@ function disegnaSelettore() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
             if (idx === -1) selezioniAttuali.push(n); else selezioniAttuali.splice(idx, 1);
-            document.getElementById('cartella-corrente').innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
+            var display = document.getElementById('cartella-corrente');
+            if (display) display.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
             disegnaSelettore();
         }; })(num);
         griglia.appendChild(btn);
     }
 }
 
+// 4. Estrazione e Vincite (Logica confermata) [cite: 2026-01-29]
 function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
     var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
     db.ref('bingo/').update({ estratti: numeriUsciti });
-    controllaVincite();
+    controllaVinciteCloud();
 }
 
-function assegnaCartellaDaArchivio() {
-    var nome = document.getElementById('nome-giocatore').value;
-    var tel = document.getElementById('tel-giocatore').value;
-    if (!nome || !tel || selezioniAttuali.length === 0) return alert("Dati mancanti!");
-    selezioniAttuali.forEach((idS) => {
-        giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
-        cartelleUsate.push(idS);
-    });
-    db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
-    var link = window.location.href.split('vendita.html')[0] + "cartella.html?ids=" + selezioniAttuali.join(',');
-    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent("Link cartelle: " + link), '_blank');
-    selezioniAttuali = []; location.reload();
-}
-
-function controllaVincite() {
+function controllaVinciteCloud() {
     giocatori.forEach(g => {
         let tot = 0;
         for (let r = 0; r < 3; r++) {
             let riga = 0;
-            for (let c = 0; c < 9; c++) { if (g.cartella[r][c] && numeriUsciti.includes(g.cartella[r][c])) { riga++; tot++; } }
+            for (let c = 0; c < 9; c++) { 
+                if (g.cartella[r][c] && numeriUsciti.includes(g.cartella[r][c])) { riga++; tot++; } 
+            }
             if (riga === 4 && !premiVinti.quaterna) { annunciaVincitore("QUATERNA", g.nome, g.id); premiVinti.quaterna = true; }
             if (riga === 5 && !premiVinti.cinquina) { annunciaVincitore("CINQUINA", g.nome, g.id); premiVinti.cinquina = true; }
         }
@@ -98,22 +98,51 @@ function controllaVincite() {
     db.ref('bingo/').update({ premi: premiVinti });
 }
 
+// 5. Annuncio Vincitore (Grafica sollevata confermata) [cite: 2026-02-13]
 function annunciaVincitore(tipo, nome, id) {
-    let div = document.createElement('div');
-    div.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;color:white;text-align:center;padding:20px;";
-    div.innerHTML = <h1 style="color:#f1c40f;">${tipo}</h1><p>Vincitore: ${nome.toUpperCase()}</p><p>Cartella: ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 20px;background:#f1c40f;border:none;font-weight:bold;cursor:pointer;">CHIUDI</button>;
-    document.body.appendChild(div);
+    let overlay = document.createElement('div');
+    overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:10px;";
+    overlay.innerHTML = `
+        <h1 style="font-size:9vw; margin:5px 0; color:#f1c40f;">${tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo}</h1>
+        <p style="font-size:5vw; margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p>
+        <p style="font-size:3.5vw; color:#bdc3c7; margin:5px 0;">Cartella N. ${id}</p>
+        <button onclick="this.parentElement.remove()" style="padding:10px 35px; font-size:4vw; cursor:pointer; background:#f1c40f; border:none; border-radius:10px; margin-top:15px; font-weight:bold; color:black; text-transform:uppercase;">Chiudi</button>
+    `;
+    document.body.appendChild(overlay);
 }
 
-function aggiornaLista() {
+// 6. Assegnazione e WhatsApp [cite: 2026-01-29]
+function assegnaCartellaDaArchivio() {
+    var nome = document.getElementById('nome-giocatore').value;
+    var tel = document.getElementById('tel-giocatore').value;
+    if (!nome || !tel || selezioniAttuali.length === 0) return alert("Dati incompleti!");
+    
+    selezioniAttuali.forEach((idS) => {
+        giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
+        cartelleUsate.push(idS);
+    });
+    
+    db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
+    
+    var baseUrl = window.location.href.split('vendita.html')[0];
+    var link = baseUrl + "cartella.html?ids=" + selezioniAttuali.join(',');
+    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent("Ecco il tuo link: " + link), '_blank');
+    
+    selezioniAttuali = [];
+    document.getElementById('nome-giocatore').value = "";
+    document.getElementById('tel-giocatore').value = "";
+}
+
+function aggiornaListaVendite() {
     var lista = document.getElementById('lista-classifica');
     if (!lista) return; lista.innerHTML = "";
     giocatori.slice().reverse().forEach(g => {
         var d = document.createElement('div');
-        d.innerHTML = <strong>👤 ${g.nome}</strong> (C. ${g.id});
+        d.style = "border-bottom: 1px solid #444; padding: 5px; margin-bottom: 5px;";
+        d.innerHTML = <strong>👤 ${g.nome.toUpperCase()}</strong> (C. ${g.id});
         lista.appendChild(d);
     });
 }
 
-function resetPartita() { if(confirm("Resetta numeri?")) db.ref('bingo/estratti').remove(); }
-function resetVendite() { if(confirm("Resetta TUTTO?")) db.ref('bingo/').remove(); }
+function resetPartita() { if(confirm("Resetta i numeri estratti?")) db.ref('bingo/estratti').remove(); }
+function resetVendite() { if(confirm("ATTENZIONE: Libera tutte le cartelle vendute?")) db.ref('bingo/').remove(); }
