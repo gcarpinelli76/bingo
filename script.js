@@ -15,7 +15,7 @@ const db = firebase.database();
 var numeriUsciti = [], giocatori = [], cartelleUsate = [], selezioniAttuali = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 
-// --- FUNZIONI TABELLONE ORIGINALI --- [cite: 2026-01-29]
+// --- FUNZIONI TABELLONE RIPRISTINATE --- [cite: 2026-01-29, 2026-02-13]
 function inizializzaTabellone() {
     var tab = document.getElementById('tabellone');
     if (tab && tab.innerHTML === "") {
@@ -27,7 +27,7 @@ function inizializzaTabellone() {
     }
 }
 
-// --- SINCRONIZZAZIONE REALTIME --- [cite: 2026-02-14]
+// --- SINCRONIZZAZIONE CLOUD --- [cite: 2026-02-13, 2026-02-14]
 db.ref('bingo/').on('value', (snapshot) => {
     const data = snapshot.val() || {};
     numeriUsciti = data.estratti || [];
@@ -50,7 +50,7 @@ function aggiornaGraficaTabellone() {
     if (display) display.innerText = numeriUsciti.length > 0 ? numeriUsciti[numeriUsciti.length - 1] : "--";
 }
 
-// --- GESTIONE CARTELLE (1000 FISSE) --- [cite: 2026-02-12]
+// --- GESTIONE 1000 CARTELLE RIPRISTINATA --- [cite: 2026-02-12]
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia || typeof ARCHIVIO_FISSO === 'undefined') return;
@@ -72,7 +72,7 @@ function disegnaSelettore() {
     }
 }
 
-// --- FUNZIONI GIOCO ORIGINALI --- [cite: 2026-01-29]
+// --- LOGICA GIOCO RIPRISTINATA --- [cite: 2026-01-29, 2026-02-13]
 function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
     var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
@@ -97,7 +97,7 @@ function controllaVincite() {
     db.ref('bingo/').update({ premi: premiVinti });
 }
 
-// --- ANNUNCIO ORIGINALE (ALTO) --- [cite: 2026-02-13]
+// --- ANNUNCIO ORIGINALE (POSIZIONE ALTA) --- [cite: 2026-02-13]
 function annunciaVincitore(tipo, nome, cartellaId) {
     let overlay = document.createElement('div');
     overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:10px;";
