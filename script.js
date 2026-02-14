@@ -14,14 +14,14 @@ if (!firebase.apps.length) {
 }
 const db = firebase.database();
 
-// VARIABILI ORIGINALI - NON TOCCARE [cite: 2026-01-29, 2026-02-12]
+// VARIABILI ORIGINALI [cite: 2026-01-29, 2026-02-12]
 var numeriUsciti = [];
 var giocatori = [];
 var cartelleUsate = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 var selezioniAttuali = [];
 
-// --- DISEGNO IMMEDIATO (Per non far sparire nulla) --- [cite: 2026-02-13]
+// --- DISEGNO IMMEDIATO AL CARICAMENTO --- [cite: 2026-02-13]
 window.onload = function() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
@@ -33,7 +33,7 @@ window.onload = function() {
             tabellone.appendChild(div);
         }
     }
-    // Avvia il collegamento Cloud
+    // Avvio ascolto Cloud [cite: 2026-02-14]
     db.ref('bingo/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         numeriUsciti = data.estratti || [];
@@ -45,7 +45,7 @@ window.onload = function() {
 };
 
 function aggiornaTutto() {
-    // Aggiorna colori tabellone
+    // Aggiorna colori numeri estratti [cite: 2026-02-13]
     for (var i = 1; i <= 90; i++) {
         var el = document.getElementById('n' + i);
         if (el) el.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
@@ -88,6 +88,7 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
+    // Invia vendite al Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
 
     var baseUrl = window.location.href.split('vendita.html')[0];
@@ -103,6 +104,8 @@ function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
     var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
+    
+    // Invia estrazione al Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ estratti: numeriUsciti });
     controllaVincite();
 }
@@ -121,6 +124,7 @@ function controllaVincite() {
         }
         if (tot === 15 && !premiVinti.bingo) { annunciaVincitore("BINGO", g.nome, g.id); premiVinti.bingo = true; }
     });
+    // Sincronizza premi sul Cloud [cite: 2026-02-14]
     db.ref('bingo/').update({ premi: premiVinti });
 }
 
