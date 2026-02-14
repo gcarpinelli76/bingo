@@ -11,14 +11,24 @@ const firebaseConfig = {
 if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
 const db = firebase.database();
 
-// Recupero dati o inizializzazione [cite: 2026-01-29]
-var numeriUsciti = JSON.parse(localStorage.getItem('bingo_estratti')) || [];
-var giocatori = JSON.parse(localStorage.getItem('bingo_giocatori')) || [];
-var cartelleUsate = JSON.parse(localStorage.getItem('bingo_usate')) || [];
-var premiVinti = JSON.parse(localStorage.getItem('bingo_premi')) || { quaterna: false, cinquina: false, bingo: false };
-var selezioniAttuali = [];
+// Variabili di stato
+var numeriUsciti = [], giocatori = [], cartelleUsate = [], selezioniAttuali = [];
+var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 
-window.onload = function() {
+// --- SINCRONIZZAZIONE REALTIME ---
+// Questa funzione sostituisce il caricamento iniziale e tiene tutti aggiornati
+db.ref('bingo/').on('value', (snapshot) => {
+    const data = snapshot.val() || {};
+    numeriUsciti = data.estratti || [];
+    giocatori = data.giocatori || [];
+    cartelleUsate = data.usate || [];
+    premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
+
+    // Esegue il rendering grafico ogni volta che il database cambia
+    aggiornaGrafica();
+});
+
+function aggiornaGrafica() {
     var tabellone = document.getElementById('tabellone');
     if (tabellone) {
         tabellone.innerHTML = "";
@@ -28,14 +38,16 @@ window.onload = function() {
             div.id = 'n' + i; div.innerText = i;
             tabellone.appendChild(div);
         }
-        if (numeriUsciti.length > 0) {
-            var display = document.getElementById('numero-gigante');
-            if (display) display.innerText = numeriUsciti[numeriUsciti.length - 1];
+        var display = document.getElementById('numero-gigante');
+        if (display && numeriUsciti.length > 0) {
+            display.innerText = numeriUsciti[numeriUsciti.length - 1];
+        } else if (display) {
+            display.innerText = "--";
         }
     }
     if (typeof ARCHIVIO_FISSO !== 'undefined') disegnaSelettore();
     aggiornaLista();
-};
+}
 
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
@@ -74,8 +86,11 @@ function assegnaCartellaDaArchivio() {
         cartelleUsate.push(idS);
     });
 
-    localStorage.setItem('bingo_giocatori', JSON.stringify(giocatori));
-    localStorage.setItem('bingo_usate', JSON.stringify(cartelleUsate));
+    // SALVATAGGIO CLOUD (Sostituisce localStorage)
+    db.ref('bingo/').update({
+        giocatori: giocatori,
+        usate: cartelleUsate
+    });
 
     var linkUnico = baseUrl + "cartella.html?ids=" + idsString;
     var msg = "BINGO\nCliente: " + nome.toUpperCase() + "\n🎫 Cartelle: " + idsString + "\n🔗 Link unico:\n" + linkUnico;
@@ -84,21 +99,19 @@ function assegnaCartellaDaArchivio() {
     selezioniAttuali = [];
     document.getElementById('cartella-corrente').innerText = "---";
     nomeIn.value = ""; telIn.value = "";
-    disegnaSelettore(); aggiornaLista();
 }
 
 function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
     var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
     numeriUsciti.push(n);
-    localStorage.setItem('bingo_estratti', JSON.stringify(numeriUsciti));
-    var el = document.getElementById('n' + n);
-    if (el) el.className = 'numero estratto';
-    var display = document.getElementById('numero-gigante');
-    if (display) display.innerText = n;
+    
+    // INVIO NUMERO AL CLOUD
+    db.ref('bingo/').update({
+        estratti: numeriUsciti
+    });
     
     controllaVincite();
-    aggiornaLista();
 }
 
 function controllaVincite() {
@@ -127,13 +140,13 @@ function controllaVincite() {
             premiVinti.bingo = true;
         }
     });
-    localStorage.setItem('bingo_premi', JSON.stringify(premiVinti));
+    // AGGIORNAMENTO PREMI CLOUD
+    db.ref('bingo/').update({ premi: premiVinti });
 }
 
 function annunciaVincitore(tipo, nome, cartellaId) {
     let overlay = document.createElement('div');
     overlay.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:10000; color:white; font-family:sans-serif; text-align:center; border: 10px solid #f1c40f; box-sizing:border-box; padding:10px;";
-    
     let titolo = tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo;
     overlay.innerHTML = `
         <h1 style="font-size:9vw; margin:5px 0; color:#f1c40f;">${titolo}</h1>
@@ -145,17 +158,15 @@ function annunciaVincitore(tipo, nome, cartellaId) {
 }
 
 function resetPartita() {
-    if (confirm("Vuoi resettare i numeri estratti? Le cartelle assegnate rimarranno ai clienti.")) {
-        localStorage.removeItem('bingo_estratti');
-        localStorage.removeItem('bingo_premi');
-        location.reload(); 
+    if (confirm("Vuoi resettare i numeri estratti?")) {
+        db.ref('bingo/estratti').remove();
+        db.ref('bingo/premi').remove();
     }
 }
 
 function resetVendite() {
-    if (confirm("Attenzione: vuoi liberare tutte le cartelle e cancellare l'elenco dei giocatori?")) {
-        localStorage.clear();
-        location.reload(); 
+    if (confirm("Attenzione: vuoi liberare tutte le cartelle?")) {
+        db.ref('bingo/').remove();
     }
 }
 
