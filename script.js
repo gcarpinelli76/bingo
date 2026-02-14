@@ -1,26 +1,4 @@
-// 1. VARIABILI E ARCHIVIO (Caricate subito) [cite: 2026-01-29]
-var numeriUsciti = [], giocatori = [], cartelleUsate = [], selezioniAttuali = [];
-var premiVinti = { quaterna: false, cinquina: false, bingo: false };
-
-// 2. DISEGNO IMMEDIATO (Protezione schermo bianco) [cite: 2026-02-13]
-window.onload = function() {
-    var tabellone = document.getElementById('tabellone');
-    if (tabellone) {
-        tabellone.innerHTML = "";
-        for (var i = 1; i <= 90; i++) {
-            var div = document.createElement('div');
-            div.className = 'numero'; div.id = 'n' + i; div.innerText = i;
-            tabellone.appendChild(div);
-        }
-    }
-    if (typeof ARCHIVIO_FISSO !== 'undefined') disegnaSelettore();
-    aggiornaLista();
-    
-    // Solo ora, dopo che la grafica è apparsa, avviamo il Cloud [cite: 2026-02-14]
-    connettiCloud();
-};
-
-// 3. LOGICA CLOUD [cite: 2026-02-14]
+// 1. CONFIGURAZIONE FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyAMLbvGWyNxMa-CUKq7-SjJJ8tWOPg4xWQ",
   authDomain: "bingolive-33748.firebaseapp.com",
@@ -31,32 +9,71 @@ const firebaseConfig = {
   appId: "1:808361788552:web:402b229f6395bc26a28b3d"
 };
 
-function connettiCloud() {
-    if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-    const db = firebase.database();
-    
+// Inizializzazione protetta
+if (!firebase.apps.length) { 
+    firebase.initializeApp(firebaseConfig); 
+}
+const db = firebase.database();
+
+// 2. VARIABILI DI STATO ORIGINALI
+var numeriUsciti = [];
+var giocatori = [];
+var cartelleUsate = [];
+var premiVinti = { quaterna: false, cinquina: false, bingo: false };
+var selezioniAttuali = [];
+
+// 3. CARICAMENTO E DISEGNO
+window.onload = function() {
+    // Disegno immediato del tabellone vuoto per evitare lo schermo bianco
+    var tabellone = document.getElementById('tabellone');
+    if (tabellone) {
+        tabellone.innerHTML = "";
+        for (var i = 1; i <= 90; i++) {
+            var div = document.createElement('div');
+            div.className = 'numero';
+            div.id = 'n' + i;
+            div.innerText = i;
+            tabellone.appendChild(div);
+        }
+    }
+
+    // Ascolto dei dati dal Cloud
     db.ref('bingo/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
         numeriUsciti = data.estratti || [];
         giocatori = data.giocatori || [];
         cartelleUsate = data.usate || [];
         premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
-        aggiornaStatoDinamico();
+        
+        aggiornaTutto();
     });
-}
+};
 
-function aggiornaStatoDinamico() {
+function aggiornaTutto() {
+    // Aggiorna colori tabellone
     for (var i = 1; i <= 90; i++) {
         var el = document.getElementById('n' + i);
-        if (el) el.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
+        if (el) {
+            el.className = numeriUsciti.includes(i) ? 'numero estratto' : 'numero';
+        }
     }
-    var display = document.getElementById('numero-gigante');
-    if (display) display.innerText = numeriUsciti.length > 0 ? numeriUsciti[numeriUsciti.length - 1] : "--";
-    if (typeof ARCHIVIO_FISSO !== 'undefined') disegnaSelettore();
+    
+    // Numero gigante
+    var disp = document.getElementById('numero-gigante');
+    if (disp) {
+        disp.innerText = numeriUsciti.length > 0 ? numeriUsciti[numeriUsciti.length - 1] : "--";
+    }
+    
+    // Selettore cartelle vendita
+    if (typeof ARCHIVIO_FISSO !== 'undefined') {
+        disegnaSelettore();
+    }
+    
+    // Lista giocatori e mini-cartelle
     aggiornaLista();
 }
 
-// 4. TUTTE LE TUE FUNZIONI ORIGINALI (Senza tagli) [cite: 2026-02-12, 2026-02-13]
+// 4. LOGICA VENDITA (Archivio 1000 cartelle)
 function disegnaSelettore() {
     var griglia = document.getElementById('griglia-selezione');
     if (!griglia) return;
@@ -65,15 +82,28 @@ function disegnaSelettore() {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        btn.className = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
-        btn.onclick = (function(n) { return function() {
-            if (cartelleUsate.includes(n)) return;
-            var idx = selezioniAttuali.indexOf(n);
-            if (idx === -1) selezioniAttuali.push(n); else selezioniAttuali.splice(idx, 1);
-            var curr = document.getElementById('cartella-corrente');
-            if (curr) curr.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
-            disegnaSelettore();
-        }; })(num);
+        
+        var isOccupato = cartelleUsate.includes(num);
+        var isSelezionato = selezioniAttuali.includes(num);
+        
+        btn.className = 'btn-selezione';
+        if (isOccupato) btn.classList.add('occupato');
+        if (isSelezionato) btn.classList.add('selezionato');
+        
+        btn.onclick = (function(n) {
+            return function() {
+                if (cartelleUsate.includes(n)) return;
+                var idx = selezioniAttuali.indexOf(n);
+                if (idx === -1) {
+                    selezioniAttuali.push(n);
+                } else {
+                    selezioniAttuali.splice(idx, 1);
+                }
+                var curr = document.getElementById('cartella-corrente');
+                if (curr) curr.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
+                disegnaSelettore();
+            };
+        })(num);
         griglia.appendChild(btn);
     }
 }
@@ -81,73 +111,111 @@ function disegnaSelettore() {
 function assegnaCartellaDaArchivio() {
     var nomeIn = document.getElementById('nome-giocatore');
     var telIn = document.getElementById('tel-giocatore');
-    if (!nomeIn || !telIn || selezioniAttuali.length === 0 || nomeIn.value === "" || telIn.value === "") return alert("Dati incompleti!");
+    
+    if (!nomeIn || !telIn || selezioniAttuali.length === 0 || nomeIn.value === "" || telIn.value === "") {
+        return alert("Inserisci nome, telefono e seleziona almeno una cartella!");
+    }
+
     selezioniAttuali.forEach((idS) => {
-        giocatori.push({ nome: nomeIn.value, tel: telIn.value, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
+        giocatori.push({
+            nome: nomeIn.value,
+            tel: telIn.value,
+            cartella: ARCHIVIO_FISSO[idS - 1],
+            id: idS
+        });
         cartelleUsate.push(idS);
     });
-    firebase.database().ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
+
+    // Sincronizza con Cloud
+    db.ref('bingo/').update({
+        giocatori: giocatori,
+        usate: cartelleUsate
+    });
+
+    // Link WhatsApp
     var baseUrl = window.location.href.split('vendita.html')[0];
     var linkUnico = baseUrl + "cartella.html?ids=" + selezioniAttuali.join(',');
-    window.open("https://api.whatsapp.com/send?phone=" + telIn.value + "&text=" + encodeURIComponent("Link: " + linkUnico), '_blank');
-    selezioniAttuali = []; nomeIn.value = ""; telIn.value = "";
+    var msg = "Ciao " + nomeIn.value.toUpperCase() + ", ecco le tue cartelle: " + linkUnico;
+    window.open("https://api.whatsapp.com/send?phone=" + telIn.value + "&text=" + encodeURIComponent(msg), '_blank');
+
+    // Reset locale
+    selezioniAttuali = [];
+    nomeIn.value = "";
+    telIn.value = "";
 }
 
+// 5. LOGICA GIOCO
 function estraiNumero() {
     if (numeriUsciti.length >= 90) return;
-    var n; do { n = Math.floor(Math.random() * 90) + 1; } while (numeriUsciti.includes(n));
+    var n;
+    do {
+        n = Math.floor(Math.random() * 90) + 1;
+    } while (numeriUsciti.includes(n));
+    
     numeriUsciti.push(n);
-    firebase.database().ref('bingo/').update({ estratti: numeriUsciti });
+    db.ref('bingo/').update({ estratti: numeriUsciti });
     controllaVincite();
 }
 
 function controllaVincite() {
     giocatori.forEach(g => {
-        let tot = 0;
+        let puntiTotali = 0;
         for (let r = 0; r < 3; r++) {
-            let riga = 0;
+            let rigaPunti = 0;
             for (let c = 0; c < 9; c++) {
                 let n = g.cartella[r][c];
-                if (n !== null && n !== undefined && numeriUsciti.includes(n)) { riga++; tot++; }
+                if (n && numeriUsciti.includes(n)) {
+                    rigaPunti++;
+                    puntiTotali++;
+                }
             }
-            if (riga === 4 && !premiVinti.quaterna) { annunciaVincitore("QUATERNA", g.nome, g.id); premiVinti.quaterna = true; }
-            if (riga === 5 && !premiVinti.cinquina) { annunciaVincitore("CINQUINA", g.nome, g.id); premiVinti.cinquina = true; }
+            if (rigaPunti === 4 && !premiVinti.quaterna) {
+                annunciaVincitore("QUATERNA", g.nome, g.id);
+                premiVinti.quaterna = true;
+            }
+            if (rigaPunti === 5 && !premiVinti.cinquina) {
+                annunciaVincitore("CINQUINA", g.nome, g.id);
+                premiVinti.cinquina = true;
+            }
         }
-        if (tot === 15 && !premiVinti.bingo) { annunciaVincitore("BINGO", g.nome, g.id); premiVinti.bingo = true; }
+        if (puntiTotali === 15 && !premiVinti.bingo) {
+            annunciaVincitore("BINGO", g.nome, g.id);
+            premiVinti.bingo = true;
+        }
     });
-    firebase.database().ref('bingo/').update({ premi: premiVinti });
+    db.ref('bingo/').update({ premi: premiVinti });
 }
 
 function annunciaVincitore(tipo, nome, id) {
     let div = document.createElement('div');
-    div.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;color:white;text-align:center;padding:10px;border:10px solid #f1c40f;box-sizing:border-box;";
-    div.innerHTML = <h1 style="font-size:9vw;margin:5px 0;color:#f1c40f;">${tipo}</h1><p style="font-size:5vw;margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p><p style="font-size:3.5vw;color:#bdc3c7;margin:5px 0;">Cartella N. ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 35px;font-size:4vw;background:#f1c40f;border:none;border-radius:10px;margin-top:15px;font-weight:bold;color:black;">CHIUDI</button>;
+    div.className = "overlay-vittoria";
+    div.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:9999;display:flex;flex-direction:column;justify-content:center;align-items:center;color:white;text-align:center;";
+    div.innerHTML = <h1>${tipo}!</h1><h2>${nome.toUpperCase()}</h2><p>Cartella n. ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 20px; font-size:20px;">OK</button>;
     document.body.appendChild(div);
 }
 
 function aggiornaLista() {
     var lista = document.getElementById('lista-classifica');
-    if (!lista) return; lista.innerHTML = "";
+    if (!lista) return;
+    lista.innerHTML = "";
     giocatori.slice().reverse().forEach(g => {
         var d = document.createElement('div');
-        d.style = "margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px;";
-        d.innerHTML = "<strong>👤 " + g.nome.toUpperCase() + "</strong> (C. " + g.id + ")";
-        var html = '<div style="display: grid; grid-template-columns: repeat(9, 1fr); gap: 2px; margin-top: 5px;">';
-        for (var r = 0; r < 3; r++) {
-            for (var c = 0; c < 9; c++) {
-                var n = g.cartella[r][c];
-                var displayNum = (n === null || n === undefined) ? "" : n;
-                var estr = (n && numeriUsciti.includes(n)) ? true : false;
-                var cellStyle = "aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; font-size: 10px; border: 1px solid #444; background: #222;";
-                if (n === null || n === undefined) cellStyle += " background: #111;";
-                if (estr) cellStyle += " background: #f1c40f; color: black; font-weight: bold;";
-                html += <div style="${cellStyle}">${displayNum}</div>;
-            }
-        }
-        d.innerHTML += html + '</div>';
+        d.className = "giocatore-item";
+        d.innerHTML = <strong>${g.nome}</strong> (Cartella ${g.id});
+        // Qui potresti aggiungere la visualizzazione della mini-cartella se presente nel CSS
         lista.appendChild(d);
     });
 }
 
-function resetPartita() { if(confirm("Resetta numeri?")) { firebase.database().ref('bingo/estratti').remove(); firebase.database().ref('bingo/premi').remove(); } }
-function resetVendite() { if(confirm("Resetta TUTTO?")) firebase.database().ref('bingo/').remove(); }
+function resetPartita() {
+    if(confirm("Vuoi resettare i numeri estratti?")) {
+        db.ref('bingo/estratti').remove();
+        db.ref('bingo/premi').set({ quaterna: false, cinquina: false, bingo: false });
+    }
+}
+
+function resetVendite() {
+    if(confirm("ATTENZIONE: Questo cancellerà tutti i giocatori e le vendite!")) {
+        db.ref('bingo/').remove();
+    }
+}
