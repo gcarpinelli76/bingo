@@ -25,13 +25,13 @@ function inizializzaTabellone() {
     }
 }
 
-// Sincronizzazione Realtime [cite: 2026-02-14]
 db.ref('bingo/').on('value', (snapshot) => {
     const data = snapshot.val() || {};
     numeriUsciti = data.estratti || [];
     giocatori = data.giocatori || [];
     cartelleUsate = data.usate || [];
     premiVinti = data.premi || { quaterna: false, cinquina: false, bingo: false };
+
     inizializzaTabellone();
     aggiornaGraficaTabellone();
     disegnaSelettore();
@@ -60,7 +60,8 @@ function disegnaSelettore() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
             if (idx === -1) selezioniAttuali.push(n); else selezioniAttuali.splice(idx, 1);
-            document.getElementById('cartella-corrente').innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
+            var display = document.getElementById('cartella-corrente');
+            if (display) display.innerText = selezioniAttuali.length > 0 ? selezioniAttuali.join(", ") : "---";
             disegnaSelettore();
         }; })(num);
         griglia.appendChild(btn);
@@ -73,22 +74,6 @@ function estraiNumero() {
     numeriUsciti.push(n);
     db.ref('bingo/').update({ estratti: numeriUsciti });
     controllaVincite();
-}
-
-function assegnaCartellaDaArchivio() {
-    var nome = document.getElementById('nome-giocatore').value;
-    var tel = document.getElementById('tel-giocatore').value;
-    if (!nome || !tel || selezioniAttuali.length === 0) return alert("Dati mancanti!");
-    selezioniAttuali.forEach((idS) => {
-        giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
-        cartelleUsate.push(idS);
-    });
-    db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
-    var link = window.location.href.split('vendita.html')[0] + "cartella.html?ids=" + selezioniAttuali.join(',');
-    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent("Link cartelle: " + link), '_blank');
-    selezioniAttuali = [];
-    document.getElementById('nome-giocatore').value = "";
-    document.getElementById('tel-giocatore').value = "";
 }
 
 function controllaVincite() {
@@ -110,6 +95,22 @@ function annunciaVincitore(tipo, nome, id) {
     div.style = "position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:10000;color:white;text-align:center;padding:10px;border:10px solid #f1c40f;box-sizing:border-box;";
     div.innerHTML = <h1 style="font-size:9vw;margin:5px 0;color:#f1c40f;">${tipo === "BINGO" ? "🎉 BINGO! 🎉" : "🏆 " + tipo}</h1><p style="font-size:5vw;margin:5px 0;">Vincitore: <br><strong>${nome.toUpperCase()}</strong></p><p style="font-size:3.5vw;color:#bdc3c7;margin:5px 0;">Cartella N. ${id}</p><button onclick="this.parentElement.remove()" style="padding:10px 35px;font-size:4vw;background:#f1c40f;border:none;border-radius:10px;margin-top:15px;font-weight:bold;color:black;">CHIUDI</button>;
     document.body.appendChild(div);
+}
+
+function assegnaCartellaDaArchivio() {
+    var nome = document.getElementById('nome-giocatore').value;
+    var tel = document.getElementById('tel-giocatore').value;
+    if (!nome || !tel || selezioniAttuali.length === 0) return alert("Dati mancanti!");
+    selezioniAttuali.forEach((idS) => {
+        giocatori.push({ nome: nome, tel: tel, cartella: ARCHIVIO_FISSO[idS - 1], id: idS });
+        cartelleUsate.push(idS);
+    });
+    db.ref('bingo/').update({ giocatori: giocatori, usate: cartelleUsate });
+    var link = window.location.href.split('vendita.html')[0] + "cartella.html?ids=" + selezioniAttuali.join(',');
+    window.open("https://api.whatsapp.com/send?phone=" + tel + "&text=" + encodeURIComponent("Ecco le tue cartelle: " + link), '_blank');
+    selezioniAttuali = [];
+    document.getElementById('nome-giocatore').value = "";
+    document.getElementById('tel-giocatore').value = "";
 }
 
 function aggiornaLista() {
