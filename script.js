@@ -1,16 +1,18 @@
-// Configurazione Firebase Gigi - CORRETTA
+// CONFIGURAZIONE BINGO GIGI - VERSIONE CLOUD [cite: 2026-02-14]
 const firebaseConfig = {
   apiKey: "AIzaSyAMLbvGWyNxMa-CUKq7-SjJJ8tWOPg4xWQ",
   authDomain: "bingolive-33748.firebaseapp.com",
-  databaseURL: "https://bingolive-33748-default-rtdb.firebaseio.com/",
+  databaseURL: "https://bingolive-33748-default-rtdb.europe-west1.firebasedatabase.app/",
   projectId: "bingolive-33748",
   storageBucket: "bingolive-33748.firebasestorage.app",
   messagingSenderId: "808361788552",
   appId: "1:808361788552:web:402b229f6395bc26a28b3d"
 };
 
-// Inizializzazione
-firebase.initializeApp(firebaseConfig);
+// Inizializzazione Firebase
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 
 var numeriUsciti = [];
@@ -19,7 +21,7 @@ var cartelleUsate = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 var selezioniAttuali = [];
 
-// Sincronizzazione Realtime [cite: 2026-02-13]
+// Sincronizzazione in tempo reale dal database [cite: 2026-02-14]
 db.ref('bingo/').on('value', (snapshot) => {
     const data = snapshot.val() || {};
     numeriUsciti = data.estratti || [];
@@ -51,7 +53,8 @@ function disegnaSelettore() {
         var num = i + 1;
         var btn = document.createElement('button');
         btn.innerText = num;
-        btn.className = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
+        var classe = 'btn-selezione' + (cartelleUsate.includes(num) ? ' occupato' : (selezioniAttuali.includes(num) ? ' selezionato' : ''));
+        btn.className = classe;
         btn.onclick = (function(n) { return function() {
             if (cartelleUsate.includes(n)) return;
             var idx = selezioniAttuali.indexOf(n);
@@ -96,16 +99,16 @@ function estraiNumero() {
 
 function controllaVincite() {
     giocatori.forEach(g => {
-        let totCartella = 0;
+        let tot = 0;
         for (let r = 0; r < 3; r++) {
             let inRiga = 0;
             for (let c = 0; c < 9; c++) {
-                if (g.cartella[r][c] && numeriUsciti.includes(g.cartella[r][c])) { inRiga++; totCartella++; }
+                if (g.cartella[r][c] && numeriUsciti.includes(g.cartella[r][c])) { inRiga++; tot++; }
             }
             if (inRiga === 4 && !premiVinti.quaterna) { annunciaVincitore("QUATERNA", g.nome, g.id); premiVinti.quaterna = true; }
             if (inRiga === 5 && !premiVinti.cinquina) { annunciaVincitore("CINQUINA", g.nome, g.id); premiVinti.cinquina = true; }
         }
-        if (totCartella === 15 && !premiVinti.bingo) { annunciaVincitore("BINGO", g.nome, g.id); premiVinti.bingo = true; }
+        if (tot === 15 && !premiVinti.bingo) { annunciaVincitore("BINGO", g.nome, g.id); premiVinti.bingo = true; }
     });
     db.ref('bingo/').update({ premi: premiVinti });
 }
@@ -121,14 +124,14 @@ function annunciaVincitore(tipo, nome, cartellaId) {
 }
 
 function resetPartita() {
-    if (confirm("Resettare i numeri? (Le cartelle restano ai clienti)")) {
+    if (confirm("Resettare i numeri?")) {
         db.ref('bingo/estratti').remove();
         db.ref('bingo/premi').remove();
     }
 }
 
 function resetVendite() {
-    if (confirm("RIPRISTINO TOTALE: Libera tutte le cartelle?")) {
+    if (confirm("RIPRISTINO TOTALE: Libera le cartelle?")) {
         db.ref('bingo/').remove();
     }
 }
