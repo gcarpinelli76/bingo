@@ -1,14 +1,15 @@
-// Configurazione Firebase Gigi
+// Configurazione Firebase Gigi - CORRETTA
 const firebaseConfig = {
   apiKey: "AIzaSyAMLbvGWyNxMa-CUKq7-SjJJ8tWOPg4xWQ",
   authDomain: "bingolive-33748.firebaseapp.com",
-  databaseURL: "https://bingolive-33748-default-rtdb.europe-west1.firebasedatabase.app/",
+  databaseURL: "https://bingolive-33748-default-rtdb.firebaseio.com/",
   projectId: "bingolive-33748",
   storageBucket: "bingolive-33748.firebasestorage.app",
   messagingSenderId: "808361788552",
   appId: "1:808361788552:web:402b229f6395bc26a28b3d"
 };
 
+// Inizializzazione
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -18,7 +19,7 @@ var cartelleUsate = [];
 var premiVinti = { quaterna: false, cinquina: false, bingo: false };
 var selezioniAttuali = [];
 
-// Sincronizzazione Realtime
+// Sincronizzazione Realtime [cite: 2026-02-13]
 db.ref('bingo/').on('value', (snapshot) => {
     const data = snapshot.val() || {};
     numeriUsciti = data.estratti || [];
