@@ -1,7 +1,7 @@
-// ARCHIVIO BLINDATO - 1000 CARTELLE FISSE [cite: 2026-02-12]
+// ARCHIVIO BLINDATO - 1000 CARTELLE FISSE
 const ARCHIVIO_FISSO = (function() {
     let archivio = [];
-    // Il SEME FISSO garantisce che le cartelle siano identiche ovunque [cite: 2026-02-15]
+    // Il SEME FISSO garantisce che le cartelle siano identiche ovunque
     let seed = 12345; 
     function seededRandom() {
         seed = (seed * 9301 + 49297) % 233280;
@@ -20,32 +20,45 @@ const ARCHIVIO_FISSO = (function() {
             colonnePool[col].push(i);
         }
         
-        // Usiamo seededRandom invece di Math.random() [cite: 2026-02-15]
-        colonnePool.forEach(pool => pool.sort(() => seededRandom() - 0.5));
+        // Mischia i pool usando il seme fisso
+        colonnePool.forEach(pool => {
+            pool.sort(() => seededRandom() - 0.5);
+        });
 
+        // Riempimento principale delle righe
         for (let cIdx = 0; cIdx < 6; cIdx++) {
             for (let rIdx = 0; rIdx < 3; rIdx++) {
-                let riga = serie[cIdx][rIdx];
                 let count = 0;
                 let ordineColonne = [0,1,2,3,4,5,6,7,8].sort((a, b) => {
                     return colonnePool[b].length - colonnePool[a].length || seededRandom() - 0.5;
                 });
 
                 for (let col of ordineColonne) {
-                    if (count < 5 && colonnePool[col].length > 0 && riga[col] === null) {
-                        riga[col] = colonnePool[col].pop();
+                    if (count < 5 && colonnePool[col].length > 0 && serie[cIdx][rIdx][col] === null) {
+                        serie[cIdx][rIdx][col] = colonnePool[col].pop();
                         count++;
                     }
                 }
             }
         }
-        // Recupero per righe da 15 numeri esatti [cite: 2026-02-14]
-        for (let c = 0; r = 0; c < 6; c++) {
+
+        // Recupero finale per garantire che ogni riga abbia ESATTAMENTE 5 numeri
+        for (let c = 0; c < 6; c++) {
             for (let r = 0; r < 3; r++) {
                 while (serie[c][r].filter(x => x !== null).length < 5) {
                     let colLibera = colonnePool.findIndex(p => p.length > 0);
                     if (colLibera === -1) break;
-                    serie[c][r][colLibera] = colonnePool[colLibera].pop();
+                    // Inserisce il numero nella colonna corretta se possibile, altrimenti nella prima libera
+                    let n = colonnePool[colLibera].pop();
+                    let targetCol = Math.floor(n / 10);
+                    if (n === 90) targetCol = 8;
+                    
+                    if (serie[c][r][targetCol] === null) {
+                        serie[c][r][targetCol] = n;
+                    } else {
+                        let firstEmpty = serie[c][r].indexOf(null);
+                        if (firstEmpty !== -1) serie[c][r][firstEmpty] = n;
+                    }
                 }
             }
         }
